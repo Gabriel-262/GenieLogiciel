@@ -1,2 +1,25 @@
-.vs
+# .NET build outputs
+bin/
+obj/
+publish/
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# NuGet
+*.nupkg
+*.snupkg
+project.lock.json
+packages/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local settings
 .env.local
+local.settings.json
