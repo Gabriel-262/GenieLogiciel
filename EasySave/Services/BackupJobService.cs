@@ -1,85 +1,79 @@
 using System.Text.Json;
 using EasySave.Models;
 
-namespace EasySave.Services
+namespace EasySave.Services;
+
+public class BackupJobService
 {
-    //Service for managing backup jobs
-    public class BackupJobService
+    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+
+    private readonly PathService _paths;
+    private readonly List<BackupJob> _jobs;
+
+    public BackupJobService(PathService paths)
     {
-        // Use the .env for the const
-        private static readonly int MaxJobs = LoadMaxJobsFromEnv();
+        _paths = paths;
+        _jobs  = LoadFromDisk();
+    }
 
-        private static int LoadMaxJobsFromEnv()
+    public List<BackupJob> GetAll() => _jobs.ToList();
+
+    public BackupJob? GetById(int id) => _jobs.FirstOrDefault(j => j.Id == id);
+
+    public bool IdExists(int id) => _jobs.Any(j => j.Id == id);
+
+    public int Count => _jobs.Count;
+
+    public void Add(BackupJob job)
+    {
+        if (_jobs.Count >= AppConfig.MaxJobs)
+            throw new InvalidOperationException($"Maximum number of backup jobs ({AppConfig.MaxJobs}) reached.");
+        if (_jobs.Any(j => j.Id == job.Id))
+            throw new InvalidOperationException($"Job ID {job.Id} already exists.");
+
+        _jobs.Add(job);
+        SaveToDisk();
+    }
+
+    public bool Update(int id, BackupJob updated)
+    {
+        int idx = _jobs.FindIndex(j => j.Id == id);
+        if (idx < 0) return false;
+
+        updated.Id = id;
+        _jobs[idx] = updated;
+        SaveToDisk();
+        return true;
+    }
+
+    public bool Delete(int id)
+    {
+        int removed = _jobs.RemoveAll(j => j.Id == id);
+        if (removed == 0) return false;
+        SaveToDisk();
+        return true;
+    }
+
+    private List<BackupJob> LoadFromDisk()
+    {
+        string path = _paths.GetJobsConfigFilePath();
+        if (!File.Exists(path)) return new List<BackupJob>();
+
+        try
         {
-            string envPath = File.Exists(".env") ? ".env" : Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".env");
-            string line = File.ReadLines(envPath).First(l => l.StartsWith("MAX_JOBS="));
-            return int.Parse(line.Substring(9));
-        }
-
-        //json serializer options: pretty print for Notepad readability
-        private static readonly JsonSerializerOptions JsonOptions = new JsonSerializerOptions
-        {
-            WriteIndented = true
-        };
-
-        public List<BackupJob> LoadJobs()
-        {
-            //Read path from PathManager
-            string path = PathManager.GetJobsConfigFilePath();
-
-            if (!File.Exists(path))
-                return new List<BackupJob>();
-
             string json = File.ReadAllText(path);
             return JsonSerializer.Deserialize<List<BackupJob>>(json) ?? new List<BackupJob>();
         }
-
-        //Saves the full list of backup jobs to the configuration JSON file
-
-        public void SaveJobs(List<BackupJob> jobs)
+        catch (JsonException)
         {
-            if (jobs.Count > MaxJobs)
-                throw new InvalidOperationException($"Cannot save more than {MaxJobs} backup jobs.");
-
-            string path = PathManager.GetJobsConfigFilePath();
-            string json = JsonSerializer.Serialize(jobs, JsonOptions);
-            File.WriteAllText(path, json);
+            return new List<BackupJob>();
         }
+    }
 
-        public void AddJob(BackupJob job)
-        {
-            var jobs = LoadJobs();
-
-            if (jobs.Count >= MaxJobs)
-                throw new InvalidOperationException($"Maximum number of backup jobs ({MaxJobs}) already reached.");
-
-            jobs.Add(job);
-            SaveJobs(jobs);
-        }
-
-
-        public void UpdateJob(int index, BackupJob updatedJob)
-        {
-            //persist
-            var jobs = LoadJobs();
-
-            if (index < 0 || index >= jobs.Count)
-                throw new ArgumentOutOfRangeException(nameof(index), "Job index is out of range.");
-
-            jobs[index] = updatedJob;
-            SaveJobs(jobs);
-        }
-
-        public void DeleteJob(int index)
-        {
-            //persist
-            var jobs = LoadJobs();
-
-            if (index < 0 || index >= jobs.Count)
-                throw new ArgumentOutOfRangeException(nameof(index), "Job index is out of range.");
-
-            jobs.RemoveAt(index);
-            SaveJobs(jobs);
-        }
+    private void SaveToDisk()
+    {
+        File.WriteAllText(
+            _paths.GetJobsConfigFilePath(),
+            JsonSerializer.Serialize(_jobs, JsonOptions));
     }
 }

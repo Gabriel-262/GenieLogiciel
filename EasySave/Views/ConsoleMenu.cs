@@ -15,7 +15,6 @@ public class ConsoleMenu
         _engine = engine;
     }
 
-    // Main interactive loop
     public void Run()
     {
         while (true)
@@ -36,12 +35,12 @@ public class ConsoleMenu
 
             switch (Console.ReadLine()?.Trim())
             {
-                case "1": ListJobs();    break;
-                case "2": AddJob();      break;
-                case "3": EditJob();     break;
-                case "4": DeleteJob();   break;
-                case "5": ExecuteJob();  break;
-                case "6": ExecuteAll();  break;
+                case "1": ListJobs();       break;
+                case "2": AddJob();         break;
+                case "3": EditJob();        break;
+                case "4": DeleteJob();      break;
+                case "5": ExecuteJob();     break;
+                case "6": ExecuteAll();     break;
                 case "7": ChangeLanguage(); break;
                 case "8": return;
                 default:
@@ -66,7 +65,7 @@ public class ConsoleMenu
         else
         {
             foreach (var job in jobs)
-                Console.WriteLine($"  [{job.Id}] {job.Name,-20} {job.Type,-15} {job.SourcePath} --> {job.TargetPath}");
+                Console.WriteLine($"  [{job.Id}] {job.Name,-20} {LocalizeType(job.Type),-25} {job.SourcePath} --> {job.TargetPath}");
         }
 
         Wait();
@@ -78,19 +77,27 @@ public class ConsoleMenu
         Console.WriteLine(Translator.Get("Job_Add_Title"));
         Console.WriteLine();
 
-        if (_jobService.GetAll().Count >= 5)
+        if (_jobService.Count >= AppConfig.MaxJobs)
         {
-            Console.WriteLine(Translator.Get("Error_MaxJobs"));
+            Console.WriteLine(string.Format(Translator.Get("Error_MaxJobs"), AppConfig.MaxJobs));
             Wait();
             return;
         }
 
+        int id        = PromptNewId();
         string name   = Prompt(Translator.Get("Prompt_Name"),   InputValidator.IsValidJobName,      Translator.Get("Error_InvalidName"));
         string source = Prompt(Translator.Get("Prompt_Source"), InputValidator.IsExistingDirectory, Translator.Get("Error_PathNotFound"));
         string target = Prompt(Translator.Get("Prompt_Target"), InputValidator.IsValidPath,         Translator.Get("Error_InvalidPath"));
         BackupType type = PromptBackupType();
 
-        _jobService.Add(new BackupJob { Name = name, SourcePath = source, TargetPath = target, Type = type });
+        _jobService.Add(new BackupJob
+        {
+            Id = id,
+            Name = name,
+            SourcePath = source,
+            TargetPath = target,
+            Type = type
+        });
         Console.WriteLine(Translator.Get("Job_Added"));
         Wait();
     }
@@ -102,7 +109,7 @@ public class ConsoleMenu
         Console.Write(Translator.Get("Prompt_JobId"));
         if (!int.TryParse(Console.ReadLine(), out int id)) { Wait(); return; }
 
-        if (_jobService.GetAll().All(j => j.Id != id))
+        if (!_jobService.IdExists(id))
         {
             Console.WriteLine(Translator.Get("Error_JobNotFound"));
             Wait();
@@ -114,7 +121,13 @@ public class ConsoleMenu
         string target = Prompt(Translator.Get("Prompt_Target"), InputValidator.IsValidPath,         Translator.Get("Error_InvalidPath"));
         BackupType type = PromptBackupType();
 
-        _jobService.Update(id, new BackupJob { Name = name, SourcePath = source, TargetPath = target, Type = type });
+        _jobService.Update(id, new BackupJob
+        {
+            Name = name,
+            SourcePath = source,
+            TargetPath = target,
+            Type = type
+        });
         Console.WriteLine(Translator.Get("Job_Updated"));
         Wait();
     }
@@ -138,8 +151,8 @@ public class ConsoleMenu
         Console.Write(Translator.Get("Prompt_JobId"));
         if (!int.TryParse(Console.ReadLine(), out int id)) { Wait(); return; }
 
-        var job = _jobService.GetAll().FirstOrDefault(j => j.Id == id);
-        if (job == null)
+        var job = _jobService.GetById(id);
+        if (job is null)
         {
             Console.WriteLine(Translator.Get("Error_JobNotFound"));
             Wait();
@@ -173,6 +186,25 @@ public class ConsoleMenu
         Wait();
     }
 
+    private int PromptNewId()
+    {
+        while (true)
+        {
+            Console.Write(string.Format(Translator.Get("Prompt_JobIdNew"), AppConfig.MaxJobs));
+            if (!int.TryParse(Console.ReadLine(), out int id) || id < 1 || id > AppConfig.MaxJobs)
+            {
+                Console.WriteLine(string.Format(Translator.Get("Error_InvalidId"), AppConfig.MaxJobs));
+                continue;
+            }
+            if (_jobService.IdExists(id))
+            {
+                Console.WriteLine(Translator.Get("Error_IdExists"));
+                continue;
+            }
+            return id;
+        }
+    }
+
     private static string Prompt(string label, Func<string, bool> validator, string errorMsg)
     {
         while (true)
@@ -197,6 +229,11 @@ public class ConsoleMenu
             Console.WriteLine(Translator.Get("Error_InvalidChoice"));
         }
     }
+
+    private static string LocalizeType(BackupType type) =>
+        type == BackupType.Full
+            ? Translator.Get("Type_Full")
+            : Translator.Get("Type_Differential");
 
     private void PrintJobList()
     {
