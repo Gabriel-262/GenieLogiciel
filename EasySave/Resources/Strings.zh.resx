@@ -17,147 +17,147 @@
     <value>=== EasySave v1.0 ===</value>
   </data>
   <data name="Menu_ListJobs" xml:space="preserve">
-    <value>1. Lister les travaux de sauvegarde</value>
+    <value>1. 列出备份任务</value>
   </data>
   <data name="Menu_AddJob" xml:space="preserve">
-    <value>2. Ajouter un travail de sauvegarde</value>
+    <value>2. 添加备份任务</value>
   </data>
   <data name="Menu_EditJob" xml:space="preserve">
-    <value>3. Modifier un travail de sauvegarde</value>
+    <value>3. 编辑备份任务</value>
   </data>
   <data name="Menu_DeleteJob" xml:space="preserve">
-    <value>4. Supprimer un travail de sauvegarde</value>
+    <value>4. 删除备份任务</value>
   </data>
   <data name="Menu_ExecuteJob" xml:space="preserve">
-    <value>5. Exécuter un travail de sauvegarde</value>
+    <value>5. 执行备份任务</value>
   </data>
   <data name="Menu_ExecuteAll" xml:space="preserve">
-    <value>6. Exécuter tous les travaux de sauvegarde</value>
+    <value>6. 执行所有备份任务</value>
   </data>
   <data name="Menu_Settings" xml:space="preserve">
-    <value>7. Paramètres</value>
+    <value>7. 设置</value>
   </data>
   <data name="Menu_Quit" xml:space="preserve">
-    <value>8. Quitter</value>
+    <value>8. 退出</value>
   </data>
 
   <data name="Jobs_List_Title" xml:space="preserve">
-    <value>--- Travaux de sauvegarde ---</value>
+    <value>--- 备份任务 ---</value>
   </data>
   <data name="Jobs_Empty" xml:space="preserve">
-    <value>Aucun travail de sauvegarde configuré.</value>
+    <value>未配置备份任务。</value>
   </data>
   <data name="Job_Add_Title" xml:space="preserve">
-    <value>--- Ajouter un travail ---</value>
+    <value>--- 添加备份任务 ---</value>
   </data>
   <data name="Job_Added" xml:space="preserve">
-    <value>Travail ajouté avec succès.</value>
+    <value>备份任务添加成功。</value>
   </data>
   <data name="Job_Updated" xml:space="preserve">
-    <value>Travail modifié avec succès.</value>
+    <value>备份任务更新成功。</value>
   </data>
   <data name="Job_Deleted" xml:space="preserve">
-    <value>Travail supprimé avec succès.</value>
+    <value>备份任务删除成功。</value>
   </data>
   <data name="Job_Executing" xml:space="preserve">
-    <value>Exécution du travail : {0}</value>
+    <value>正在执行任务：{0}</value>
   </data>
   <data name="Job_ExecutingAll" xml:space="preserve">
-    <value>Exécution de tous les travaux de sauvegarde...</value>
+    <value>正在执行所有备份任务...</value>
   </data>
   <data name="Job_Done" xml:space="preserve">
-    <value>Terminé.</value>
+    <value>完成。</value>
   </data>
 
   <data name="Prompt_Choice" xml:space="preserve">
-    <value>Votre choix : </value>
+    <value>请选择：</value>
   </data>
   <data name="Prompt_Name" xml:space="preserve">
-    <value>Nom du travail : </value>
+    <value>任务名称：</value>
   </data>
   <data name="Prompt_Source" xml:space="preserve">
-    <value>Chemin source : </value>
+    <value>源路径：</value>
   </data>
   <data name="Prompt_Target" xml:space="preserve">
-    <value>Chemin cible : </value>
+    <value>目标路径：</value>
   </data>
   <data name="Prompt_JobId" xml:space="preserve">
-    <value>ID du travail : </value>
+    <value>任务ID：</value>
   </data>
   <data name="Prompt_JobIdNew" xml:space="preserve">
-    <value>ID du travail (1-{0}) : </value>
+    <value>任务ID (1-{0})：</value>
   </data>
   <data name="Prompt_Continue" xml:space="preserve">
-    <value>Appuyez sur une touche pour continuer...</value>
+    <value>按任意键继续...</value>
   </data>
   <data name="Prompt_BackHint" xml:space="preserve">
-    <value>(appuyez sur '{0}' pour revenir en arrière)</value>
+    <value>（按 '{0}' 返回）</value>
   </data>
   <data name="Prompt_NewBackKey" xml:space="preserve">
-    <value>Nouvelle touche de retour (une seule lettre) : </value>
+    <value>新的返回键（单个字母）：</value>
   </data>
 
   <data name="Type_Full" xml:space="preserve">
-    <value>Sauvegarde complète</value>
+    <value>完整备份</value>
   </data>
   <data name="Type_Differential" xml:space="preserve">
-    <value>Sauvegarde différentielle</value>
+    <value>差异备份</value>
   </data>
 
   <data name="Language_Changed" xml:space="preserve">
-    <value>Langue changée avec succès.</value>
+    <value>语言切换成功。</value>
   </data>
 
   <data name="Settings_Title" xml:space="preserve">
-    <value>--- Paramètres ---</value>
+    <value>--- 设置 ---</value>
   </data>
   <data name="Settings_AutoId" xml:space="preserve">
-    <value>1. Attribution automatique de l'ID</value>
+    <value>1. 自动分配任务ID</value>
   </data>
   <data name="Settings_Language" xml:space="preserve">
-    <value>2. Langue</value>
+    <value>2. 语言</value>
   </data>
   <data name="Settings_BackKey" xml:space="preserve">
-    <value>3. Touche de retour</value>
+    <value>3. 返回键</value>
   </data>
   <data name="Settings_Back" xml:space="preserve">
-    <value>4. Retour</value>
+    <value>4. 返回</value>
   </data>
   <data name="Settings_On" xml:space="preserve">
-    <value>ACTIVÉ</value>
+    <value>开</value>
   </data>
   <data name="Settings_Off" xml:space="preserve">
-    <value>DÉSACTIVÉ</value>
+    <value>关</value>
   </data>
 
   <data name="Error_InvalidChoice" xml:space="preserve">
-    <value>Choix invalide. Veuillez réessayer.</value>
+    <value>选择无效。请重试。</value>
   </data>
   <data name="Error_MaxJobs" xml:space="preserve">
-    <value>Nombre maximum de travaux atteint ({0}).</value>
+    <value>已达到最大备份任务数 ({0})。</value>
   </data>
   <data name="Error_InvalidName" xml:space="preserve">
-    <value>Nom invalide. Évitez les caractères spéciaux.</value>
+    <value>名称无效。请避免使用特殊字符。</value>
   </data>
   <data name="Error_InvalidPath" xml:space="preserve">
-    <value>Chemin invalide. Veuillez entrer un chemin de dossier valide.</value>
+    <value>路径无效。请输入有效的目录路径。</value>
   </data>
   <data name="Error_PathNotFound" xml:space="preserve">
-    <value>Dossier introuvable. Veuillez entrer un chemin existant.</value>
+    <value>找不到目录。请输入现有路径。</value>
   </data>
   <data name="Error_JobNotFound" xml:space="preserve">
-    <value>Travail introuvable.</value>
+    <value>找不到任务。</value>
   </data>
   <data name="Error_InvalidId" xml:space="preserve">
-    <value>ID invalide. Veuillez entrer un nombre entre 1 et {0}.</value>
+    <value>ID无效。请输入 1 到 {0} 之间的数字。</value>
   </data>
   <data name="Error_IdExists" xml:space="preserve">
-    <value>Cet ID est déjà utilisé. Veuillez en choisir un autre.</value>
+    <value>此ID已被使用。请选择另一个。</value>
   </data>
   <data name="Error_InvalidBackKey" xml:space="preserve">
-    <value>Invalide. Utilisez une seule lettre (pas un chiffre).</value>
+    <value>无效。请使用单个字母（非数字）。</value>
   </data>
   <data name="Error_InvalidArgs" xml:space="preserve">
-    <value>Arguments invalides. Utilisez le format : 1-3 ou 1;3</value>
+    <value>参数无效。请使用格式：1-3 或 1;3</value>
   </data>
 </root>

@@ -17,147 +17,147 @@
     <value>=== EasySave v1.0 ===</value>
   </data>
   <data name="Menu_ListJobs" xml:space="preserve">
-    <value>1. Lister les travaux de sauvegarde</value>
+    <value>1. רשימת משימות גיבוי</value>
   </data>
   <data name="Menu_AddJob" xml:space="preserve">
-    <value>2. Ajouter un travail de sauvegarde</value>
+    <value>2. הוספת משימת גיבוי</value>
   </data>
   <data name="Menu_EditJob" xml:space="preserve">
-    <value>3. Modifier un travail de sauvegarde</value>
+    <value>3. עריכת משימת גיבוי</value>
   </data>
   <data name="Menu_DeleteJob" xml:space="preserve">
-    <value>4. Supprimer un travail de sauvegarde</value>
+    <value>4. מחיקת משימת גיבוי</value>
   </data>
   <data name="Menu_ExecuteJob" xml:space="preserve">
-    <value>5. Exécuter un travail de sauvegarde</value>
+    <value>5. הרצת משימת גיבוי</value>
   </data>
   <data name="Menu_ExecuteAll" xml:space="preserve">
-    <value>6. Exécuter tous les travaux de sauvegarde</value>
+    <value>6. הרצת כל משימות הגיבוי</value>
   </data>
   <data name="Menu_Settings" xml:space="preserve">
-    <value>7. Paramètres</value>
+    <value>7. הגדרות</value>
   </data>
   <data name="Menu_Quit" xml:space="preserve">
-    <value>8. Quitter</value>
+    <value>8. יציאה</value>
   </data>
 
   <data name="Jobs_List_Title" xml:space="preserve">
-    <value>--- Travaux de sauvegarde ---</value>
+    <value>--- משימות גיבוי ---</value>
   </data>
   <data name="Jobs_Empty" xml:space="preserve">
-    <value>Aucun travail de sauvegarde configuré.</value>
+    <value>אין משימות גיבוי מוגדרות.</value>
   </data>
   <data name="Job_Add_Title" xml:space="preserve">
-    <value>--- Ajouter un travail ---</value>
+    <value>--- הוספת משימת גיבוי ---</value>
   </data>
   <data name="Job_Added" xml:space="preserve">
-    <value>Travail ajouté avec succès.</value>
+    <value>משימת הגיבוי נוספה בהצלחה.</value>
   </data>
   <data name="Job_Updated" xml:space="preserve">
-    <value>Travail modifié avec succès.</value>
+    <value>משימת הגיבוי עודכנה בהצלחה.</value>
   </data>
   <data name="Job_Deleted" xml:space="preserve">
-    <value>Travail supprimé avec succès.</value>
+    <value>משימת הגיבוי נמחקה בהצלחה.</value>
   </data>
   <data name="Job_Executing" xml:space="preserve">
-    <value>Exécution du travail : {0}</value>
+    <value>מריץ משימה: {0}</value>
   </data>
   <data name="Job_ExecutingAll" xml:space="preserve">
-    <value>Exécution de tous les travaux de sauvegarde...</value>
+    <value>מריץ את כל משימות הגיבוי...</value>
   </data>
   <data name="Job_Done" xml:space="preserve">
-    <value>Terminé.</value>
+    <value>הסתיים.</value>
   </data>
 
   <data name="Prompt_Choice" xml:space="preserve">
-    <value>Votre choix : </value>
+    <value>הבחירה שלך: </value>
   </data>
   <data name="Prompt_Name" xml:space="preserve">
-    <value>Nom du travail : </value>
+    <value>שם המשימה: </value>
   </data>
   <data name="Prompt_Source" xml:space="preserve">
-    <value>Chemin source : </value>
+    <value>נתיב מקור: </value>
   </data>
   <data name="Prompt_Target" xml:space="preserve">
-    <value>Chemin cible : </value>
+    <value>נתיב יעד: </value>
   </data>
   <data name="Prompt_JobId" xml:space="preserve">
-    <value>ID du travail : </value>
+    <value>מזהה משימה: </value>
   </data>
   <data name="Prompt_JobIdNew" xml:space="preserve">
-    <value>ID du travail (1-{0}) : </value>
+    <value>מזהה משימה (1-{0}): </value>
   </data>
   <data name="Prompt_Continue" xml:space="preserve">
-    <value>Appuyez sur une touche pour continuer...</value>
+    <value>לחץ על מקש כלשהו להמשך...</value>
   </data>
   <data name="Prompt_BackHint" xml:space="preserve">
-    <value>(appuyez sur '{0}' pour revenir en arrière)</value>
+    <value>(לחץ על '{0}' לחזרה)</value>
   </data>
   <data name="Prompt_NewBackKey" xml:space="preserve">
-    <value>Nouvelle touche de retour (une seule lettre) : </value>
+    <value>מקש חזרה חדש (אות אחת): </value>
   </data>
 
   <data name="Type_Full" xml:space="preserve">
-    <value>Sauvegarde complète</value>
+    <value>גיבוי מלא</value>
   </data>
   <data name="Type_Differential" xml:space="preserve">
-    <value>Sauvegarde différentielle</value>
+    <value>גיבוי דיפרנציאלי</value>
   </data>
 
   <data name="Language_Changed" xml:space="preserve">
-    <value>Langue changée avec succès.</value>
+    <value>השפה שונתה בהצלחה.</value>
   </data>
 
   <data name="Settings_Title" xml:space="preserve">
-    <value>--- Paramètres ---</value>
+    <value>--- הגדרות ---</value>
   </data>
   <data name="Settings_AutoId" xml:space="preserve">
-    <value>1. Attribution automatique de l'ID</value>
+    <value>1. הקצאת מזהה אוטומטית</value>
   </data>
   <data name="Settings_Language" xml:space="preserve">
-    <value>2. Langue</value>
+    <value>2. שפה</value>
   </data>
   <data name="Settings_BackKey" xml:space="preserve">
-    <value>3. Touche de retour</value>
+    <value>3. מקש חזרה</value>
   </data>
   <data name="Settings_Back" xml:space="preserve">
-    <value>4. Retour</value>
+    <value>4. חזרה</value>
   </data>
   <data name="Settings_On" xml:space="preserve">
-    <value>ACTIVÉ</value>
+    <value>מופעל</value>
   </data>
   <data name="Settings_Off" xml:space="preserve">
-    <value>DÉSACTIVÉ</value>
+    <value>מושבת</value>
   </data>
 
   <data name="Error_InvalidChoice" xml:space="preserve">
-    <value>Choix invalide. Veuillez réessayer.</value>
+    <value>בחירה שגויה. נסה שוב.</value>
   </data>
   <data name="Error_MaxJobs" xml:space="preserve">
-    <value>Nombre maximum de travaux atteint ({0}).</value>
+    <value>הגעת למספר המקסימלי של משימות ({0}).</value>
   </data>
   <data name="Error_InvalidName" xml:space="preserve">
-    <value>Nom invalide. Évitez les caractères spéciaux.</value>
+    <value>שם לא תקין. הימנע מתווים מיוחדים.</value>
   </data>
   <data name="Error_InvalidPath" xml:space="preserve">
-    <value>Chemin invalide. Veuillez entrer un chemin de dossier valide.</value>
+    <value>נתיב לא תקין. אנא הזן נתיב תקף.</value>
   </data>
   <data name="Error_PathNotFound" xml:space="preserve">
-    <value>Dossier introuvable. Veuillez entrer un chemin existant.</value>
+    <value>תיקייה לא נמצאה. אנא הזן נתיב קיים.</value>
   </data>
   <data name="Error_JobNotFound" xml:space="preserve">
-    <value>Travail introuvable.</value>
+    <value>משימה לא נמצאה.</value>
   </data>
   <data name="Error_InvalidId" xml:space="preserve">
-    <value>ID invalide. Veuillez entrer un nombre entre 1 et {0}.</value>
+    <value>מזהה לא תקין. אנא הזן מספר בין 1 ל-{0}.</value>
   </data>
   <data name="Error_IdExists" xml:space="preserve">
-    <value>Cet ID est déjà utilisé. Veuillez en choisir un autre.</value>
+    <value>המזהה הזה כבר בשימוש. בחר מזהה אחר.</value>
   </data>
   <data name="Error_InvalidBackKey" xml:space="preserve">
-    <value>Invalide. Utilisez une seule lettre (pas un chiffre).</value>
+    <value>לא תקין. השתמש באות אחת (לא ספרה).</value>
   </data>
   <data name="Error_InvalidArgs" xml:space="preserve">
-    <value>Arguments invalides. Utilisez le format : 1-3 ou 1;3</value>
+    <value>ארגומנטים לא תקינים. השתמש בפורמט: 1-3 או 1;3</value>
   </data>
 </root>
