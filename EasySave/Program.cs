@@ -1,18 +1,24 @@
 using System.Text;
+using EasyLog;
 using EasySave;
 using EasySave.Resources;
 using EasySave.Services;
+using EasySave.ViewModels;
 using EasySave.Views;
 
 Console.OutputEncoding = Encoding.UTF8;
 
 var pathService     = new PathService();
 var settingsService = new SettingsService(pathService);
+
+Translator.Initialize(pathService.GetLangFilePath);
 Translator.SetLanguage(settingsService.Current.Language);
 
-var jobService   = new BackupJobService(pathService);
-var stateService = new StateService(pathService);
-var engine       = new BackupEngine(jobService, stateService, pathService);
+var repo   = new JobRepository(pathService);
+ILogger logger = AppConfig.LogFormat == LogFormat.Xml
+    ? new XmlAppendLogger(pathService.GetDailyLogFilePath)
+    : new JsonLineLogger(pathService.GetDailyLogFilePath);
+var engine = new BackupEngine(repo, logger);
 
 if (args.Length > 0)
 {
@@ -27,5 +33,6 @@ if (args.Length > 0)
     return;
 }
 
-var menu = new ConsoleMenu(jobService, engine, settingsService);
+var mainVm = new MainViewModel(repo, engine, settingsService);
+var menu = new ConsoleMenu(mainVm);
 menu.Run();
