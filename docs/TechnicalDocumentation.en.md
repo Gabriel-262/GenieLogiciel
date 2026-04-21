@@ -27,6 +27,7 @@ GenieLogiciel/
     ├── AppConfig.cs              Reads .env (MAX_JOBS), exposes defaults
     ├── .env                      MAX_JOBS=5
     ├── Models/                   Pure data types
+    │   ├── AppSettings.cs        Persisted user preferences
     │   ├── BackupJob.cs
     │   ├── BackupType.cs         { Full, Differential }
     │   ├── JobStatus.cs          { Inactive, Active }
@@ -36,6 +37,7 @@ GenieLogiciel/
     ├── Services/
     │   ├── PathService.cs        Resolves paths under %AppData%\ProSoft\EasySave
     │   ├── BackupJobService.cs   CRUD on jobs.json, enforces MaxJobs
+    │   ├── SettingsService.cs    Load/save settings.json
     │   ├── StateService.cs       Real-time updates to state.json
     │   └── BackupEngine.cs       Orchestrator: scan, copy, log, progress
     ├── Views/                    Console UI
@@ -45,7 +47,9 @@ GenieLogiciel/
     └── Resources/                i18n resources
         ├── Translator.cs         ResourceManager wrapper
         ├── Strings.resx          English (neutral / default)
-        └── Strings.fr.resx       French
+        ├── Strings.fr.resx       French
+        ├── Strings.zh.resx       Simplified Chinese
+        └── Strings.he.resx       Hebrew
 ```
 
 ## 3. Runtime layout (installed machine)
@@ -55,7 +59,8 @@ The software does **not** write under `C:\temp`. All runtime files are placed un
 ```
 %AppData%\ProSoft\EasySave\
 ├── Config\
-│   └── jobs.json                 Jobs saved by BackupJobService
+│   ├── jobs.json                 Jobs saved by BackupJobService
+│   └── settings.json             User preferences (SettingsService)
 ├── Logs\
 │   └── yyyy-MM-dd.json           One daily file created by EasyLog.dll
 └── State\
@@ -89,11 +94,16 @@ No layer depends on a layer above it. `EasyLog.dll` has zero dependencies on the
 `Program.cs` wires the graph once:
 
 ```csharp
-var pathService  = new PathService();
+Console.OutputEncoding = Encoding.UTF8;
+var pathService     = new PathService();
+var settingsService = new SettingsService(pathService);
+Translator.SetLanguage(settingsService.Current.Language);
 var jobService   = new BackupJobService(pathService);
 var stateService = new StateService(pathService);
 var engine       = new BackupEngine(jobService, stateService, pathService);
 ```
+
+UTF-8 console encoding is set up front so Chinese and Hebrew glyphs render correctly on Windows Terminal / cmd.exe.
 
 `BackupEngine` receives `IStateManager` (not the concrete `StateService`), making it mock-friendly.
 
@@ -156,10 +166,40 @@ Headless mode never calls `Console.Clear` nor waits for a key — it executes an
 
 ## 8. Internationalisation
 
-- Neutral (default) culture is English — set via `<NeutralLanguage>en</NeutralLanguage>` in `EasySave.csproj` and `AppConfig.DefaultLanguage = "en"`.
-- French is provided by `Strings.fr.resx`.
-- `Translator.SetLanguage("fr")` switches the UI culture for the current process.
-- Each `.resx` key is the **contract** between `ConsoleMenu` and the resource file — adding a new language means copying `Strings.resx` to `Strings.<culture>.resx` and translating the `<value>` tags only.
+Neutral (default) culture is English — set via `<NeutralLanguage>en</NeutralLanguage>` in `EasySave.csproj`. The language actually used at startup is read from `settings.json` (falls back to English if absent).
+
+Shipped languages:
+
+| Code | Language |
+|------|----------|
+| `en` | English (neutral) |
+| `fr` | French |
+| `zh` | Simplified Chinese |
+| `he` | Hebrew |
+
+`Translator.SetLanguage("<code>")` switches the UI culture for the current process. Each `.resx` key is the **contract** between `ConsoleMenu` and the resource file — adding a new language means copying `Strings.resx` to `Strings.<culture>.resx` and translating the `<value>` tags only.
+
+## 8.bis Settings and back-navigation
+
+User preferences are persisted by `SettingsService` in `settings.json`:
+
+```json
+{
+  "AutoAssignJobId": false,
+  "Language": "en",
+  "BackKey": "r"
+}
+```
+
+The **Settings** entry (key `7` in the main menu) exposes a submenu with three toggles:
+
+| # | Option | Effect |
+|---|---|---|
+| 1 | Auto-assign Job ID | ON: next free id in `1..MaxJobs` is picked automatically during Add. OFF: the user types the id and uniqueness is checked. |
+| 2 | Language | Switches culture immediately and persists the choice. |
+| 3 | Back key | Single letter (not a digit). Digits are forbidden to avoid collisions with menu choices. |
+
+The back key can be pressed on **any** prompt. When the menu detects it (`IsBack(input)`), the current operation is abandoned and control returns to the main menu. Every screen prints a localised hint at the top: `(press 'r' to go back)`.
 
 ## 9. Configuration
 
@@ -178,10 +218,11 @@ Headless mode never calls `Console.Clear` nor waits for a key — it executes an
 
 When troubleshooting a customer site:
 1. Check `%AppData%\ProSoft\EasySave\Config\jobs.json` — are the jobs defined?
-2. Check `%AppData%\ProSoft\EasySave\State\state.json` — is a job stuck in `Active`?
-3. Open today's `%AppData%\ProSoft\EasySave\Logs\yyyy-MM-dd.json` — any `TransferTimeMs < 0`? That row identifies a failing file.
-4. Verify that the `EasySave` folder has write permissions for the user running the process.
-5. Confirm `.env` next to `EasySave.exe` is present and `MAX_JOBS` is a positive integer.
+2. Check `%AppData%\ProSoft\EasySave\Config\settings.json` — language and back key correct? Delete the file to reset to defaults.
+3. Check `%AppData%\ProSoft\EasySave\State\state.json` — is a job stuck in `Active`?
+4. Open today's `%AppData%\ProSoft\EasySave\Logs\yyyy-MM-dd.json` — any `TransferTimeMs < 0`? That row identifies a failing file.
+5. Verify that the `EasySave` folder has write permissions for the user running the process.
+6. Confirm `.env` next to `EasySave.exe` is present and `MAX_JOBS` is a positive integer.
 
 ## 12. Known v1.0 limits
 
