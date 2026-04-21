@@ -1,4 +1,4 @@
-namespace EasySave.Views;
+namespace EasySave.Services;
 
 public static class InputValidator
 {

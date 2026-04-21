@@ -1,16 +1,48 @@
-using System.Globalization;
-using System.Resources;
+using System.Text.Json;
 
 namespace EasySave.Resources;
 
 public static class Translator
 {
-    private static readonly ResourceManager Manager =
-        new("EasySave.Resources.Strings", typeof(Translator).Assembly);
+    private static Dictionary<string, string> _current = new();
+    private static Dictionary<string, string> _fallback = new();
+    private static Func<string, string>? _pathResolver;
 
-    public static string Get(string key) =>
-        Manager.GetString(key, CultureInfo.CurrentUICulture) ?? key;
+    public static void Initialize(Func<string, string> langFilePathFor)
+    {
+        _pathResolver = langFilePathFor;
+        _fallback = LoadFile(AppConfig.DefaultLanguage);
+        if (_current.Count == 0) _current = _fallback;
+    }
 
-    public static void SetLanguage(string cultureName) =>
-        CultureInfo.CurrentUICulture = new CultureInfo(cultureName);
+    public static void SetLanguage(string code)
+    {
+        if (_pathResolver is null) return;
+        _current = LoadFile(code);
+    }
+
+    public static string Get(string key)
+    {
+        if (_current.TryGetValue(key, out string? v)) return v;
+        if (_fallback.TryGetValue(key, out string? f)) return f;
+        return key;
+    }
+
+    private static Dictionary<string, string> LoadFile(string code)
+    {
+        if (_pathResolver is null) return new Dictionary<string, string>();
+        string path = _pathResolver(code);
+        if (!File.Exists(path)) return new Dictionary<string, string>();
+
+        try
+        {
+            string json = File.ReadAllText(path);
+            return JsonSerializer.Deserialize<Dictionary<string, string>>(json)
+                ?? new Dictionary<string, string>();
+        }
+        catch (JsonException)
+        {
+            return new Dictionary<string, string>();
+        }
+    }
 }
