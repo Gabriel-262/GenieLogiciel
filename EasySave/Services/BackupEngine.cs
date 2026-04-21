@@ -18,6 +18,10 @@ public class BackupEngine
         _logger = new EasyLogger(paths.GetDailyLogFilePath);
     }
 
+    public event EventHandler<BackupProgressEventArgs>? ProgressChanged;
+    public event EventHandler<string>? JobStarted;
+    public event EventHandler<string>? JobCompleted;
+
     public void ExecuteJobs(IEnumerable<int> jobIds)
     {
         foreach (int id in jobIds)
@@ -32,6 +36,8 @@ public class BackupEngine
     {
         if (!Directory.Exists(job.SourcePath)) return;
         Directory.CreateDirectory(job.TargetPath);
+
+        JobStarted?.Invoke(this, job.Name);
 
         var files = ScanDirectory(job.SourcePath);
         long totalSize = files.Sum(f => f.Length);
@@ -87,6 +93,7 @@ public class BackupEngine
         }
 
         _stateService.ClearState(job.Name);
+        JobCompleted?.Invoke(this, job.Name);
     }
 
     private void UpdateProgress(StateEntry state, string sourceFile, string destinationFile,
@@ -99,6 +106,18 @@ public class BackupEngine
         state.RemainingSizeBytes = totalBytes - bytesDone;
         state.ProgressPercent = totalFiles == 0 ? 100 : (double)processed * 100 / totalFiles;
         _stateService.UpdateState(state);
+
+        ProgressChanged?.Invoke(this, new BackupProgressEventArgs
+        {
+            JobName = state.JobName,
+            CurrentSourceFile = sourceFile,
+            CurrentDestinationFile = destinationFile,
+            TotalFiles = totalFiles,
+            ProcessedFiles = processed,
+            TotalSizeBytes = totalBytes,
+            BytesDone = bytesDone,
+            ProgressPercent = state.ProgressPercent
+        });
     }
 
     private static List<FileInfo> ScanDirectory(string root)

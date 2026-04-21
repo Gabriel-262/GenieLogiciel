@@ -1,7 +1,7 @@
 using System.Text;
-using EasySave;
 using EasySave.Resources;
 using EasySave.Services;
+using EasySave.ViewModels;
 using EasySave.Views;
 
 Console.OutputEncoding = Encoding.UTF8;
@@ -27,5 +27,6 @@ if (args.Length > 0)
     return;
 }
 
-var menu = new ConsoleMenu(jobService, engine, settingsService);
+var mainVm = new MainViewModel(jobService, engine, settingsService);
+var menu = new ConsoleMenu(mainVm);
 menu.Run();
