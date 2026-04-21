@@ -1,21 +1,19 @@
 using System.Diagnostics;
+using System.Security.Cryptography;
 using EasyLog;
-using EasySave.Interfaces;
 using EasySave.Models;
 
 namespace EasySave.Services;
 
 public class BackupEngine
 {
-    private readonly BackupJobService _jobService;
-    private readonly IStateManager _stateService;
+    private readonly JobRepository _repo;
     private readonly ILogger _logger;
 
-    public BackupEngine(BackupJobService jobService, IStateManager stateService, PathService paths)
+    public BackupEngine(JobRepository repo, ILogger logger)
     {
-        _jobService = jobService;
-        _stateService = stateService;
-        _logger = new EasyLogger(paths.GetDailyLogFilePath);
+        _repo = repo;
+        _logger = logger;
     }
 
     public event EventHandler<BackupProgressEventArgs>? ProgressChanged;
@@ -26,7 +24,7 @@ public class BackupEngine
     {
         foreach (int id in jobIds)
         {
-            var job = _jobService.GetById(id);
+            var job = _repo.GetJobById(id);
             if (job is null) continue;
             ExecuteJob(job);
         }
@@ -43,18 +41,16 @@ public class BackupEngine
         long totalSize = files.Sum(f => f.Length);
         int totalFiles = files.Count;
 
-        var state = new StateEntry
+        _repo.UpdateState(job.Id, e =>
         {
-            JobName = job.Name,
-            Status = JobStatus.Active,
-            TotalFiles = totalFiles,
-            TotalSizeBytes = totalSize,
-            RemainingFiles = totalFiles,
-            RemainingSizeBytes = totalSize,
-            ProgressPercent = 0,
-            LastActionTime = DateTime.Now
-        };
-        _stateService.UpdateState(state);
+            e.Status = JobStatus.Active;
+            e.TotalFiles = totalFiles;
+            e.TotalSizeBytes = totalSize;
+            e.RemainingFiles = totalFiles;
+            e.RemainingSizeBytes = totalSize;
+            e.ProgressPercent = 0;
+            e.LastActionTime = DateTime.Now;
+        });
 
         int processed = 0;
         long bytesDone = 0;
@@ -68,7 +64,7 @@ public class BackupEngine
             {
                 processed++;
                 bytesDone += sourceFile.Length;
-                UpdateProgress(state, sourceFile.FullName, destination, processed, totalFiles, bytesDone, totalSize);
+                PushProgress(job, sourceFile.FullName, destination, processed, totalFiles, bytesDone, totalSize);
                 continue;
             }
 
@@ -89,34 +85,38 @@ public class BackupEngine
 
             processed++;
             bytesDone += sourceFile.Length;
-            UpdateProgress(state, sourceFile.FullName, destination, processed, totalFiles, bytesDone, totalSize);
+            PushProgress(job, sourceFile.FullName, destination, processed, totalFiles, bytesDone, totalSize);
         }
 
-        _stateService.ClearState(job.Name);
+        _repo.ClearState(job.Id);
         JobCompleted?.Invoke(this, job.Name);
     }
 
-    private void UpdateProgress(StateEntry state, string sourceFile, string destinationFile,
+    private void PushProgress(BackupJob job, string sourceFile, string destinationFile,
         int processed, int totalFiles, long bytesDone, long totalBytes)
     {
-        state.LastActionTime = DateTime.Now;
-        state.CurrentSourceFile = sourceFile;
-        state.CurrentDestinationFile = destinationFile;
-        state.RemainingFiles = totalFiles - processed;
-        state.RemainingSizeBytes = totalBytes - bytesDone;
-        state.ProgressPercent = totalFiles == 0 ? 100 : (double)processed * 100 / totalFiles;
-        _stateService.UpdateState(state);
+        double percent = totalFiles == 0 ? 100 : (double)processed * 100 / totalFiles;
+
+        _repo.UpdateState(job.Id, e =>
+        {
+            e.LastActionTime = DateTime.Now;
+            e.CurrentSourceFile = sourceFile;
+            e.CurrentDestinationFile = destinationFile;
+            e.RemainingFiles = totalFiles - processed;
+            e.RemainingSizeBytes = totalBytes - bytesDone;
+            e.ProgressPercent = percent;
+        });
 
         ProgressChanged?.Invoke(this, new BackupProgressEventArgs
         {
-            JobName = state.JobName,
+            JobName = job.Name,
             CurrentSourceFile = sourceFile,
             CurrentDestinationFile = destinationFile,
             TotalFiles = totalFiles,
             ProcessedFiles = processed,
             TotalSizeBytes = totalBytes,
             BytesDone = bytesDone,
-            ProgressPercent = state.ProgressPercent
+            ProgressPercent = percent
         });
     }
 
@@ -131,7 +131,25 @@ public class BackupEngine
     {
         if (!File.Exists(destinationPath)) return true;
         var dest = new FileInfo(destinationPath);
-        return source.Length != dest.Length || source.LastWriteTimeUtc > dest.LastWriteTimeUtc;
+        if (source.Length != dest.Length) return true;
+        return !FilesHaveSameHash(source.FullName, destinationPath);
+    }
+
+    private static bool FilesHaveSameHash(string path1, string path2)
+    {
+        try
+        {
+            using var md5 = MD5.Create();
+            using var s1 = File.OpenRead(path1);
+            using var s2 = File.OpenRead(path2);
+            byte[] h1 = md5.ComputeHash(s1);
+            byte[] h2 = md5.ComputeHash(s2);
+            return h1.SequenceEqual(h2);
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private static long CopyFile(string source, string destination)

@@ -7,14 +7,14 @@ namespace EasySave.ViewModels;
 
 public partial class JobListViewModel : ObservableObject
 {
-    private readonly BackupJobService _jobService;
+    private readonly JobRepository _repo;
     private readonly BackupEngine _engine;
 
     [ObservableProperty] private ObservableCollection<JobItemViewModel> jobs = new();
 
-    public JobListViewModel(BackupJobService jobService, BackupEngine engine)
+    public JobListViewModel(JobRepository repo, BackupEngine engine)
     {
-        _jobService = jobService;
+        _repo = repo;
         _engine = engine;
         Refresh();
     }
@@ -26,7 +26,7 @@ public partial class JobListViewModel : ObservableObject
     public void Refresh()
     {
         Jobs.Clear();
-        foreach (var job in _jobService.GetAll())
+        foreach (var job in _repo.GetAllJobs())
             Jobs.Add(new JobItemViewModel(job));
         OnPropertyChanged(nameof(Count));
         OnPropertyChanged(nameof(IsEmpty));
@@ -39,22 +39,22 @@ public partial class JobListViewModel : ObservableObject
     public int? GetNextAvailableId()
     {
         for (int i = 1; i <= AppConfig.MaxJobs; i++)
-            if (!_jobService.IdExists(i)) return i;
+            if (!_repo.IdExists(i)) return i;
         return null;
     }
 
-    public bool IdExists(int id) => _jobService.IdExists(id);
+    public bool IdExists(int id) => _repo.IdExists(id);
 
     [RelayCommand]
     public void DeleteJob(int id)
     {
-        if (_jobService.Delete(id)) Refresh();
+        if (_repo.DeleteJob(id)) Refresh();
     }
 
     [RelayCommand]
     public void ExecuteJob(int id)
     {
-        var job = _jobService.GetById(id);
+        var job = _repo.GetJobById(id);
         if (job is null) return;
         _engine.ExecuteJob(job);
     }
@@ -62,7 +62,7 @@ public partial class JobListViewModel : ObservableObject
     [RelayCommand]
     public void ExecuteAll()
     {
-        _engine.ExecuteJobs(_jobService.GetAll().Select(j => j.Id));
+        _engine.ExecuteJobs(_repo.GetAllJobs().Select(j => j.Id));
     }
 
     [RelayCommand]

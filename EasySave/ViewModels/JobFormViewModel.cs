@@ -9,7 +9,7 @@ public enum JobFormMode { Create, Edit }
 
 public partial class JobFormViewModel : ObservableObject
 {
-    private readonly BackupJobService _jobService;
+    private readonly JobRepository _repo;
 
     [ObservableProperty] private JobFormMode mode;
     [ObservableProperty] private int id;
@@ -34,9 +34,9 @@ public partial class JobFormViewModel : ObservableObject
 
     [ObservableProperty] private BackupType type = BackupType.Full;
 
-    public JobFormViewModel(BackupJobService jobService)
+    public JobFormViewModel(JobRepository repo)
     {
-        _jobService = jobService;
+        _repo = repo;
     }
 
     public bool IsValidName => InputValidator.IsValidJobName(Name);
@@ -76,7 +76,7 @@ public partial class JobFormViewModel : ObservableObject
             Type = Type
         };
 
-        if (Mode == JobFormMode.Create) _jobService.Add(job);
-        else _jobService.Update(Id, job);
+        if (Mode == JobFormMode.Create) _repo.AddJob(job);
+        else _repo.UpdateJob(Id, job);
     }
 }

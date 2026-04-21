@@ -11,12 +11,12 @@ public partial class MainViewModel : ObservableObject
     public JobExecutionViewModel Execution { get; }
 
     public MainViewModel(
-        BackupJobService jobService,
+        JobRepository repo,
         BackupEngine engine,
         SettingsService settings)
     {
-        JobList = new JobListViewModel(jobService, engine);
-        JobForm = new JobFormViewModel(jobService);
+        JobList = new JobListViewModel(repo, engine);
+        JobForm = new JobFormViewModel(repo);
         Settings = new SettingsViewModel(settings);
         Execution = new JobExecutionViewModel(engine);
     }
