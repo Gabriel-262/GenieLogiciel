@@ -28,6 +28,9 @@ public class PathService
     public string GetJobsConfigFilePath() =>
         Path.Combine(_configDirectory, "jobs.json");
 
+    public string GetSettingsFilePath() =>
+        Path.Combine(_configDirectory, "settings.json");
+
     public string GetStateFilePath() =>
         Path.Combine(_stateDirectory, "state.json");
 }

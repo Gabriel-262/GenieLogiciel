@@ -1,11 +1,15 @@
+using System.Text;
 using EasySave;
 using EasySave.Resources;
 using EasySave.Services;
 using EasySave.Views;
 
-Translator.SetLanguage(AppConfig.DefaultLanguage);
+Console.OutputEncoding = Encoding.UTF8;
 
-var pathService  = new PathService();
+var pathService     = new PathService();
+var settingsService = new SettingsService(pathService);
+Translator.SetLanguage(settingsService.Current.Language);
+
 var jobService   = new BackupJobService(pathService);
 var stateService = new StateService(pathService);
 var engine       = new BackupEngine(jobService, stateService, pathService);
@@ -23,5 +27,5 @@ if (args.Length > 0)
     return;
 }
 
-var menu = new ConsoleMenu(jobService, engine);
+var menu = new ConsoleMenu(jobService, engine, settingsService);
 menu.Run();

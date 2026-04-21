@@ -26,7 +26,6 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Strings.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <EmbeddedResource Update="Resources\Strings.fr.resx" />
   </ItemGroup>
 
 </Project>

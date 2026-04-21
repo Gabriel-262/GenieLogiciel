@@ -27,6 +27,7 @@ GenieLogiciel/
     ├── AppConfig.cs              Lit .env (MAX_JOBS), expose les valeurs par défaut
     ├── .env                      MAX_JOBS=5
     ├── Models/                   Types de données purs
+    │   ├── AppSettings.cs        Préférences utilisateur persistées
     │   ├── BackupJob.cs
     │   ├── BackupType.cs         { Full, Differential }
     │   ├── JobStatus.cs          { Inactive, Active }
@@ -36,6 +37,7 @@ GenieLogiciel/
     ├── Services/
     │   ├── PathService.cs        Résolution des chemins sous %AppData%\ProSoft\EasySave
     │   ├── BackupJobService.cs   CRUD sur jobs.json, applique MaxJobs
+    │   ├── SettingsService.cs    Lecture/écriture de settings.json
     │   ├── StateService.cs       Mises à jour temps réel de state.json
     │   └── BackupEngine.cs       Orchestrateur : scan, copie, log, progression
     ├── Views/                    UI console
@@ -45,7 +47,9 @@ GenieLogiciel/
     └── Resources/                Ressources i18n
         ├── Translator.cs         Encapsulation ResourceManager
         ├── Strings.resx          Anglais (neutre / par défaut)
-        └── Strings.fr.resx       Français
+        ├── Strings.fr.resx       Français
+        ├── Strings.zh.resx       Chinois simplifié
+        └── Strings.he.resx       Hébreu
 ```
 
 ## 3. Emplacements à l'exécution (poste client)
@@ -55,7 +59,8 @@ Le logiciel n'écrit **pas** dans `C:\temp`. Tous les fichiers d'exécution sont
 ```
 %AppData%\ProSoft\EasySave\
 ├── Config\
-│   └── jobs.json                 Travaux enregistrés par BackupJobService
+│   ├── jobs.json                 Travaux enregistrés par BackupJobService
+│   └── settings.json             Préférences utilisateur (SettingsService)
 ├── Logs\
 │   └── yyyy-MM-dd.json           Un fichier quotidien créé par EasyLog.dll
 └── State\
@@ -89,11 +94,16 @@ Aucune couche ne dépend d'une couche supérieure. `EasyLog.dll` n'a aucune dép
 `Program.cs` câble le graphe une seule fois :
 
 ```csharp
-var pathService  = new PathService();
+Console.OutputEncoding = Encoding.UTF8;
+var pathService     = new PathService();
+var settingsService = new SettingsService(pathService);
+Translator.SetLanguage(settingsService.Current.Language);
 var jobService   = new BackupJobService(pathService);
 var stateService = new StateService(pathService);
 var engine       = new BackupEngine(jobService, stateService, pathService);
 ```
+
+L'encodage UTF-8 est activé immédiatement pour que les glyphes chinois et hébreux s'affichent correctement sur Windows Terminal / cmd.exe.
 
 `BackupEngine` reçoit un `IStateManager` (pas le `StateService` concret), ce qui facilite les tests unitaires.
 
@@ -156,10 +166,40 @@ Le mode headless n'appelle jamais `Console.Clear` et n'attend pas d'appui sur un
 
 ## 8. Internationalisation
 
-- La culture neutre (par défaut) est l'anglais — définie via `<NeutralLanguage>en</NeutralLanguage>` dans `EasySave.csproj` et `AppConfig.DefaultLanguage = "en"`.
-- Le français est fourni par `Strings.fr.resx`.
-- `Translator.SetLanguage("fr")` bascule la culture UI du processus courant.
-- Chaque clé de `.resx` est le **contrat** entre `ConsoleMenu` et le fichier de ressources — ajouter une nouvelle langue consiste à copier `Strings.resx` en `Strings.<culture>.resx` et à traduire uniquement les balises `<value>`.
+La culture neutre (par défaut) est l'anglais — définie via `<NeutralLanguage>en</NeutralLanguage>` dans `EasySave.csproj`. La langue réellement utilisée au démarrage est lue depuis `settings.json` (retombe sur l'anglais si absente).
+
+Langues livrées :
+
+| Code | Langue |
+|------|--------|
+| `en` | Anglais (neutre) |
+| `fr` | Français |
+| `zh` | Chinois simplifié |
+| `he` | Hébreu |
+
+`Translator.SetLanguage("<code>")` bascule la culture UI du processus courant. Chaque clé de `.resx` est le **contrat** entre `ConsoleMenu` et le fichier de ressources — ajouter une nouvelle langue consiste à copier `Strings.resx` en `Strings.<culture>.resx` et à traduire uniquement les balises `<value>`.
+
+## 8.bis Paramètres et navigation retour
+
+Les préférences utilisateur sont persistées par `SettingsService` dans `settings.json` :
+
+```json
+{
+  "AutoAssignJobId": false,
+  "Language": "en",
+  "BackKey": "r"
+}
+```
+
+L'entrée **Paramètres** (touche `7` du menu principal) ouvre un sous-menu avec trois options :
+
+| # | Option | Effet |
+|---|---|---|
+| 1 | Attribution automatique de l'ID | ACTIVÉ : le prochain ID libre dans `1..MaxJobs` est choisi automatiquement lors de l'ajout. DÉSACTIVÉ : l'utilisateur saisit l'ID et son unicité est vérifiée. |
+| 2 | Langue | Bascule la culture immédiatement et persiste le choix. |
+| 3 | Touche retour | Une seule lettre (pas un chiffre). Les chiffres sont interdits pour éviter les collisions avec les choix du menu. |
+
+La touche retour peut être pressée sur **n'importe quelle** saisie. Lorsque le menu la détecte (`IsBack(input)`), l'opération en cours est abandonnée et le contrôle revient au menu principal. Chaque écran affiche un indice localisé en haut : `(appuyez sur 'r' pour revenir en arrière)`.
 
 ## 9. Configuration
 
@@ -178,10 +218,11 @@ Le fichier `.env` à la racine de `EasySave/` est copié dans le dossier de sort
 
 Lors d'un diagnostic chez un client :
 1. Vérifier `%AppData%\ProSoft\EasySave\Config\jobs.json` — les travaux sont-ils définis ?
-2. Vérifier `%AppData%\ProSoft\EasySave\State\state.json` — un travail est-il bloqué en `Active` ?
-3. Ouvrir le fichier `%AppData%\ProSoft\EasySave\Logs\yyyy-MM-dd.json` du jour — des `TransferTimeMs < 0` ? Cette ligne identifie un fichier en échec.
-4. Vérifier que le dossier `EasySave` dispose des droits d'écriture pour l'utilisateur qui lance le processus.
-5. Confirmer que le `.env` à côté de `EasySave.exe` est présent et que `MAX_JOBS` est un entier positif.
+2. Vérifier `%AppData%\ProSoft\EasySave\Config\settings.json` — langue et touche retour correctes ? Supprimer le fichier pour revenir aux valeurs par défaut.
+3. Vérifier `%AppData%\ProSoft\EasySave\State\state.json` — un travail est-il bloqué en `Active` ?
+4. Ouvrir le fichier `%AppData%\ProSoft\EasySave\Logs\yyyy-MM-dd.json` du jour — des `TransferTimeMs < 0` ? Cette ligne identifie un fichier en échec.
+5. Vérifier que le dossier `EasySave` dispose des droits d'écriture pour l'utilisateur qui lance le processus.
+6. Confirmer que le `.env` à côté de `EasySave.exe` est présent et que `MAX_JOBS` est un entier positif.
 
 ## 12. Limites connues en v1.0
 
