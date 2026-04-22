@@ -1,4 +1,5 @@
 using System.Text.Json;
+using EasyLog;
 using EasySave.Models;
 
 namespace EasySave.Services;
@@ -10,12 +11,15 @@ public class JobRepository
     private readonly object _fileLock = new();
     private readonly PathService _paths;
     private readonly List<JobEntry> _entries;
+    private ILogger? _logger;
 
     public JobRepository(PathService paths)
     {
         _paths = paths;
         _entries = LoadFromDisk();
     }
+
+    public void SetLogger(ILogger logger) => _logger = logger;
 
     public List<BackupJob> GetAllJobs()
     {
@@ -63,6 +67,15 @@ public class JobRepository
             entry.TargetPath = updated.TargetPath;
             entry.Type = updated.Type;
             SaveToDisk();
+
+            _logger?.Log(new LogEntry
+            {
+                Timestamp = DateTime.Now,
+                BackupName = updated.Name,
+                Action = LogAction.JobUpdated,
+                SourceFilePath = updated.SourcePath,
+                DestinationFilePath = updated.TargetPath
+            });
             return true;
         }
     }
@@ -71,9 +84,19 @@ public class JobRepository
     {
         lock (_fileLock)
         {
-            int removed = _entries.RemoveAll(e => e.Id == id);
-            if (removed == 0) return false;
+            var entry = _entries.FirstOrDefault(e => e.Id == id);
+            if (entry is null) return false;
+            _entries.Remove(entry);
             SaveToDisk();
+
+            _logger?.Log(new LogEntry
+            {
+                Timestamp = DateTime.Now,
+                BackupName = entry.Name,
+                Action = LogAction.JobDeleted,
+                SourceFilePath = entry.SourcePath,
+                DestinationFilePath = entry.TargetPath
+            });
             return true;
         }
     }

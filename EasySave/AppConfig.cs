@@ -1,3 +1,5 @@
+using EasySave.Models;
+
 namespace EasySave;
 
 public enum LogFormat { Json, Xml }
@@ -8,26 +10,65 @@ public static class AppConfig
     private const int FallbackMaxJobs = 5;
 
     private static Dictionary<string, string>? _cachedEnv;
+    private static string? _cachedBaseDirectory;
 
-    public static int MaxJobs => int.TryParse(Env("MAX_JOBS"), out int v) && v > 0 ? v : FallbackMaxJobs;
+    public static AppSettings? Settings { get; set; }
 
-    public static LogFormat LogFormat =>
-        string.Equals(Env("LOG_FORMAT"), "xml", StringComparison.OrdinalIgnoreCase)
-            ? LogFormat.Xml
-            : LogFormat.Json;
+    public static string BaseDirectory
+    {
+        get
+        {
+            if (_cachedBaseDirectory is not null) return _cachedBaseDirectory;
 
-    public static string LogDirectory => ResolveDirectory(Env("LOG_PATH"), "Logs");
-    public static string StateDirectory => ResolveDirectory(Env("STATE_PATH"), "State");
-    public static string ConfigDirectory => ResolveDirectory(Env("CONFIG_PATH"), "Config");
-    public static string LangDirectory => ResolveDirectory(Env("LANG_PATH"), "Lang");
+            string appBase = AppDomain.CurrentDomain.BaseDirectory;
+            var dir = new DirectoryInfo(appBase);
+            while (dir is not null)
+            {
+                if (dir.EnumerateFiles("*.sln").Any())
+                {
+                    _cachedBaseDirectory = dir.FullName;
+                    return _cachedBaseDirectory;
+                }
+                dir = dir.Parent;
+            }
+
+            _cachedBaseDirectory = appBase;
+            return _cachedBaseDirectory;
+        }
+    }
+
+    public static int MaxJobs
+    {
+        get
+        {
+            if (Settings?.MaxJobs is int v && v > 0) return v;
+            return int.TryParse(Env("MAX_JOBS"), out int e) && e > 0 ? e : FallbackMaxJobs;
+        }
+    }
+
+    public static LogFormat LogFormat
+    {
+        get
+        {
+            string? raw = Settings?.LogFormat ?? Env("LOG_FORMAT");
+            return string.Equals(raw, "xml", StringComparison.OrdinalIgnoreCase)
+                ? LogFormat.Xml
+                : LogFormat.Json;
+        }
+    }
+
+    public static string LogDirectory    => ResolveDirectory(Settings?.LogPath    ?? Env("LOG_PATH"),    "Logs");
+    public static string StateDirectory  => ResolveDirectory(Settings?.StatePath  ?? Env("STATE_PATH"),  "State");
+    public static string ConfigDirectory => ResolveDirectory(Settings?.ConfigPath ?? Env("CONFIG_PATH"), "Config");
+    public static string LangDirectory   => ResolveDirectory(Settings?.LangPath   ?? Env("LANG_PATH"),   "Lang");
 
     private static string ResolveDirectory(string? raw, string defaultSubfolder)
     {
         string path = string.IsNullOrWhiteSpace(raw)
-            ? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, defaultSubfolder)
+            ? Path.Combine(BaseDirectory, defaultSubfolder)
             : (Path.IsPathRooted(raw)
                 ? raw
-                : Path.Combine(AppDomain.CurrentDomain.BaseDirectory, raw));
+                : Path.Combine(BaseDirectory, raw));
         return path;
     }
 
@@ -42,7 +83,7 @@ public static class AppConfig
         var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         try
         {
-            string envPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".env");
+            string envPath = Path.Combine(BaseDirectory, ".env");
             if (!File.Exists(envPath)) envPath = ".env";
             if (!File.Exists(envPath)) return result;
 

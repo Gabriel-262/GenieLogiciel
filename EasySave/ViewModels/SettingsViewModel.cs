@@ -15,6 +15,12 @@ public partial class SettingsViewModel : ObservableObject
         autoAssignJobId = settings.Current.AutoAssignJobId;
         language = settings.Current.Language;
         backKey = settings.Current.BackKey;
+        logFormat = (settings.Current.LogFormat ?? "json").ToLowerInvariant();
+        maxJobs = settings.Current.MaxJobs ?? AppConfig.MaxJobs;
+        logPath = settings.Current.LogPath ?? string.Empty;
+        statePath = settings.Current.StatePath ?? string.Empty;
+        configPath = settings.Current.ConfigPath ?? string.Empty;
+        langPath = settings.Current.LangPath ?? string.Empty;
     }
 
     [ObservableProperty] private bool autoAssignJobId;
@@ -24,6 +30,12 @@ public partial class SettingsViewModel : ObservableObject
     private string language;
 
     [ObservableProperty] private string backKey;
+    [ObservableProperty] private string logFormat;
+    [ObservableProperty] private int maxJobs;
+    [ObservableProperty] private string logPath;
+    [ObservableProperty] private string statePath;
+    [ObservableProperty] private string configPath;
+    [ObservableProperty] private string langPath;
 
     public string LanguageDisplayName => LanguageLabel(Language);
 
@@ -56,6 +68,37 @@ public partial class SettingsViewModel : ObservableObject
 
     private bool CanChangeBackKey(string? key) =>
         !string.IsNullOrEmpty(key) && key.Length == 1 && char.IsLetter(key[0]);
+
+    [RelayCommand]
+    private void ToggleLogFormat()
+    {
+        LogFormat = LogFormat == "xml" ? "json" : "xml";
+        _settings.Current.LogFormat = LogFormat;
+        _settings.Save();
+        AppConfig.Settings = _settings.Current;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanChangeMaxJobs))]
+    private void ChangeMaxJobs(int value)
+    {
+        MaxJobs = value;
+        _settings.Current.MaxJobs = value;
+        _settings.Save();
+        AppConfig.Settings = _settings.Current;
+    }
+
+    private bool CanChangeMaxJobs(int value) => value > 0;
+
+    [RelayCommand]
+    private void ChangeLogPath(string path)    { LogPath = path;    _settings.Current.LogPath = Nullable(path);    _settings.Save(); AppConfig.Settings = _settings.Current; }
+    [RelayCommand]
+    private void ChangeStatePath(string path)  { StatePath = path;  _settings.Current.StatePath = Nullable(path);  _settings.Save(); AppConfig.Settings = _settings.Current; }
+    [RelayCommand]
+    private void ChangeConfigPath(string path) { ConfigPath = path; _settings.Current.ConfigPath = Nullable(path); _settings.Save(); AppConfig.Settings = _settings.Current; }
+    [RelayCommand]
+    private void ChangeLangPath(string path)   { LangPath = path;   _settings.Current.LangPath = Nullable(path);   _settings.Save(); AppConfig.Settings = _settings.Current; }
+
+    private static string? Nullable(string s) => string.IsNullOrWhiteSpace(s) ? null : s;
 
     public bool IsBackInput(string? input) =>
         !string.IsNullOrEmpty(input) &&

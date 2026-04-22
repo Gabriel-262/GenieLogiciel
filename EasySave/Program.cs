@@ -10,6 +10,7 @@ Console.OutputEncoding = Encoding.UTF8;
 
 var pathService     = new PathService();
 var settingsService = new SettingsService(pathService);
+AppConfig.Settings  = settingsService.Current;
 
 Translator.Initialize(pathService.GetLangFilePath);
 Translator.SetLanguage(settingsService.Current.Language);
@@ -18,6 +19,7 @@ var repo   = new JobRepository(pathService);
 ILogger logger = AppConfig.LogFormat == LogFormat.Xml
     ? new XmlAppendLogger(pathService.GetDailyLogFilePath)
     : new JsonLineLogger(pathService.GetDailyLogFilePath);
+repo.SetLogger(logger);
 var engine = new BackupEngine(repo, logger);
 
 if (args.Length > 0)
