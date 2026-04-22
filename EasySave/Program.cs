@@ -19,6 +19,7 @@ var repo   = new JobRepository(pathService);
 ILogger logger = AppConfig.LogFormat == LogFormat.Xml
     ? new XmlAppendLogger(pathService.GetDailyLogFilePath)
     : new JsonLineLogger(pathService.GetDailyLogFilePath);
+repo.SetLogger(logger);
 var engine = new BackupEngine(repo, logger);
 
 if (args.Length > 0)

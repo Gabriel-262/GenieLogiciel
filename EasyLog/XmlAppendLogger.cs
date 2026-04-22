@@ -33,6 +33,7 @@ public class XmlAppendLogger : ILogger
             writer.WriteStartElement("LogEntry");
             writer.WriteElementString("Timestamp", entry.Timestamp.ToString("o", CultureInfo.InvariantCulture));
             writer.WriteElementString("BackupName", entry.BackupName);
+            writer.WriteElementString("Action", entry.Action.ToString());
             writer.WriteElementString("SourceFilePath", entry.SourceFilePath);
             writer.WriteElementString("DestinationFilePath", entry.DestinationFilePath);
             writer.WriteElementString("FileSizeBytes", entry.FileSizeBytes.ToString(CultureInfo.InvariantCulture));

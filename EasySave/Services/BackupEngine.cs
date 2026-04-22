@@ -71,12 +71,14 @@ public class BackupEngine
             string? destDir = Path.GetDirectoryName(destination);
             if (!string.IsNullOrEmpty(destDir)) Directory.CreateDirectory(destDir);
 
+            bool existedBefore = File.Exists(destination);
             long elapsedMs = CopyFile(sourceFile.FullName, destination);
 
             _logger.Log(new LogEntry
             {
                 Timestamp = DateTime.Now,
                 BackupName = job.Name,
+                Action = existedBefore ? LogAction.Update : LogAction.Create,
                 SourceFilePath = sourceFile.FullName,
                 DestinationFilePath = destination,
                 FileSizeBytes = sourceFile.Length,
@@ -88,8 +90,40 @@ public class BackupEngine
             PushProgress(job, sourceFile.FullName, destination, processed, totalFiles, bytesDone, totalSize);
         }
 
+        RemoveOrphans(job, files);
+
         _repo.ClearState(job.Id);
         JobCompleted?.Invoke(this, job.Name);
+    }
+
+    private void RemoveOrphans(BackupJob job, List<FileInfo> sourceFiles)
+    {
+        if (!Directory.Exists(job.TargetPath)) return;
+
+        var expected = new HashSet<string>(
+            sourceFiles.Select(f => Path.Combine(job.TargetPath, Path.GetRelativePath(job.SourcePath, f.FullName))),
+            StringComparer.OrdinalIgnoreCase);
+
+        foreach (var destFile in new DirectoryInfo(job.TargetPath).EnumerateFiles("*", SearchOption.AllDirectories))
+        {
+            if (expected.Contains(destFile.FullName)) continue;
+
+            long size = destFile.Length;
+            string fullPath = destFile.FullName;
+            try { destFile.Delete(); }
+            catch { continue; }
+
+            _logger.Log(new LogEntry
+            {
+                Timestamp = DateTime.Now,
+                BackupName = job.Name,
+                Action = LogAction.Delete,
+                SourceFilePath = string.Empty,
+                DestinationFilePath = fullPath,
+                FileSizeBytes = size,
+                TransferTimeMs = 0
+            });
+        }
     }
 
     private void PushProgress(BackupJob job, string sourceFile, string destinationFile,

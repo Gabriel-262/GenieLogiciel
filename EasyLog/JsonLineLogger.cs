@@ -1,10 +1,15 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace EasyLog;
 
 public class JsonLineLogger : ILogger
 {
-    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = false };
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        WriteIndented = false,
+        Converters = { new JsonStringEnumConverter() }
+    };
 
     private readonly object _fileLock = new();
     private readonly Func<string> _logPathProvider;
