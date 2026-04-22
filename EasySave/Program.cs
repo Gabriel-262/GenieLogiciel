@@ -10,6 +10,7 @@ Console.OutputEncoding = Encoding.UTF8;
 
 var pathService     = new PathService();
 var settingsService = new SettingsService(pathService);
+AppConfig.Settings  = settingsService.Current;
 
 Translator.Initialize(pathService.GetLangFilePath);
 Translator.SetLanguage(settingsService.Current.Language);

@@ -1,3 +1,5 @@
+using EasySave.Models;
+
 namespace EasySave;
 
 public enum LogFormat { Json, Xml }
@@ -9,17 +11,32 @@ public static class AppConfig
 
     private static Dictionary<string, string>? _cachedEnv;
 
-    public static int MaxJobs => int.TryParse(Env("MAX_JOBS"), out int v) && v > 0 ? v : FallbackMaxJobs;
+    public static AppSettings? Settings { get; set; }
 
-    public static LogFormat LogFormat =>
-        string.Equals(Env("LOG_FORMAT"), "xml", StringComparison.OrdinalIgnoreCase)
-            ? LogFormat.Xml
-            : LogFormat.Json;
+    public static int MaxJobs
+    {
+        get
+        {
+            if (Settings?.MaxJobs is int v && v > 0) return v;
+            return int.TryParse(Env("MAX_JOBS"), out int e) && e > 0 ? e : FallbackMaxJobs;
+        }
+    }
 
-    public static string LogDirectory => ResolveDirectory(Env("LOG_PATH"), "Logs");
-    public static string StateDirectory => ResolveDirectory(Env("STATE_PATH"), "State");
-    public static string ConfigDirectory => ResolveDirectory(Env("CONFIG_PATH"), "Config");
-    public static string LangDirectory => ResolveDirectory(Env("LANG_PATH"), "Lang");
+    public static LogFormat LogFormat
+    {
+        get
+        {
+            string? raw = Settings?.LogFormat ?? Env("LOG_FORMAT");
+            return string.Equals(raw, "xml", StringComparison.OrdinalIgnoreCase)
+                ? LogFormat.Xml
+                : LogFormat.Json;
+        }
+    }
+
+    public static string LogDirectory    => ResolveDirectory(Settings?.LogPath    ?? Env("LOG_PATH"),    "Logs");
+    public static string StateDirectory  => ResolveDirectory(Settings?.StatePath  ?? Env("STATE_PATH"),  "State");
+    public static string ConfigDirectory => ResolveDirectory(Settings?.ConfigPath ?? Env("CONFIG_PATH"), "Config");
+    public static string LangDirectory   => ResolveDirectory(Settings?.LangPath   ?? Env("LANG_PATH"),   "Lang");
 
     private static string ResolveDirectory(string? raw, string defaultSubfolder)
     {
