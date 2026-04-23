@@ -226,6 +226,9 @@ public class ConsoleMenu
             Console.WriteLine($"{Translator.Get("Settings_AutoId")}: [{onoff}]");
             Console.WriteLine($"{Translator.Get("Settings_Language")}: {_vm.Settings.LanguageDisplayName}");
             Console.WriteLine($"{Translator.Get("Settings_BackKey")}: [{_vm.Settings.BackKey}]");
+            Console.WriteLine($"{Translator.Get("Settings_LogFormat")}: [{_vm.Settings.LogFormat.ToUpperInvariant()}]");
+            Console.WriteLine($"{Translator.Get("Settings_Paths")}");
+            Console.WriteLine($"{Translator.Get("Settings_MaxJobs")}: [{_vm.Settings.MaxJobs}]");
             Console.WriteLine(Translator.Get("Settings_Back"));
             Console.WriteLine();
             Console.Write(Translator.Get("Prompt_Choice"));
@@ -235,16 +238,87 @@ public class ConsoleMenu
 
             switch (input)
             {
-                case "1": _vm.Settings.ToggleAutoIdCommand.Execute(null); break;
-                case "2": ChangeLanguage();                               break;
-                case "3": ChangeBackKey();                                break;
-                case "4": return;
+                case "1": _vm.Settings.ToggleAutoIdCommand.Execute(null);    break;
+                case "2": ChangeLanguage();                                  break;
+                case "3": ChangeBackKey();                                   break;
+                case "4": _vm.Settings.ToggleLogFormatCommand.Execute(null); break;
+                case "5": PathsMenu();                                       break;
+                case "6": ChangeMaxJobs();                                   break;
+                case "7": return;
                 default:
                     Console.WriteLine(Translator.Get("Error_InvalidChoice"));
                     Wait();
                     break;
             }
         }
+    }
+
+    private void PathsMenu()
+    {
+        while (true)
+        {
+            Console.Clear();
+            Console.WriteLine(Translator.Get("Paths_Title"));
+            Console.WriteLine(BackHint());
+            Console.WriteLine();
+            Console.WriteLine($"1. LogPath:    [{Display(_vm.Settings.LogPath)}]");
+            Console.WriteLine($"2. StatePath:  [{Display(_vm.Settings.StatePath)}]");
+            Console.WriteLine($"3. ConfigPath: [{Display(_vm.Settings.ConfigPath)}]");
+            Console.WriteLine($"4. LangPath:   [{Display(_vm.Settings.LangPath)}]");
+            Console.WriteLine($"5. {Translator.Get("Settings_Back")}");
+            Console.WriteLine();
+            Console.WriteLine(Translator.Get("Paths_RestartNote"));
+            Console.WriteLine();
+            Console.Write(Translator.Get("Prompt_Choice"));
+
+            string? input = Console.ReadLine()?.Trim();
+            if (IsBack(input)) return;
+
+            switch (input)
+            {
+                case "1": ChangePath(p => _vm.Settings.ChangeLogPathCommand.Execute(p));    break;
+                case "2": ChangePath(p => _vm.Settings.ChangeStatePathCommand.Execute(p));  break;
+                case "3": ChangePath(p => _vm.Settings.ChangeConfigPathCommand.Execute(p)); break;
+                case "4": ChangePath(p => _vm.Settings.ChangeLangPathCommand.Execute(p));   break;
+                case "5": return;
+                default:
+                    Console.WriteLine(Translator.Get("Error_InvalidChoice"));
+                    Wait();
+                    break;
+            }
+        }
+    }
+
+    private void ChangePath(Action<string> apply)
+    {
+        Console.Write(Translator.Get("Prompt_NewPath"));
+        string? input = Console.ReadLine();
+        if (input is null || IsBack(input)) return;
+        apply(input.Trim());
+    }
+
+    private static string Display(string? path) =>
+        string.IsNullOrWhiteSpace(path) ? "(default)" : path;
+
+    private void ChangeMaxJobs()
+    {
+        Console.Clear();
+        Console.WriteLine(BackHint());
+        Console.WriteLine();
+        Console.Write(Translator.Get("Prompt_NewMaxJobs"));
+
+        string? input = Console.ReadLine()?.Trim();
+        if (IsBack(input)) return;
+
+        if (!int.TryParse(input, out int value) || value <= 0)
+        {
+            Console.WriteLine(Translator.Get("Error_InvalidChoice"));
+            Wait();
+            return;
+        }
+
+        _vm.Settings.ChangeMaxJobsCommand.Execute(value);
+        Wait();
     }
 
     private void ChangeLanguage()

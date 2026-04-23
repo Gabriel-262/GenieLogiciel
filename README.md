@@ -1,4 +1,4 @@
-# EasySave v1.0
+# EasySave v1.1
 
 Backup management software developed by **ProSoft**.
 
@@ -13,7 +13,7 @@ EasySave is a .NET 8 console application that allows users to create, manage and
 - Multi-language support (English, French, Chinese, Hebrew)
 - Interactive console menu with settings panel
 - Headless CLI mode for automated execution
-- Real-time JSON log files (daily) via EasyLog.dll
+- Real-time JSON and XML log files (daily) via EasyLog.dll
 - Real-time state tracking (state.json)
 - Configurable settings: auto-assign job ID, back key, language
 
@@ -80,28 +80,28 @@ dotnet run --project EasySave -- "1;3"
 
 All files are stored in `%APPDATA%/ProSoft/EasySave/`:
 
-| File | Path | Description |
-|------|------|-------------|
-| Jobs config | `Config/jobs.json` | Saved backup jobs |
-| Settings | `Config/settings.json` | User preferences |
-| State | `State/state.json` | Real-time progress |
-| Logs | `Logs/YYYY-MM-DD.json` | Daily transfer logs |
+| File        | Path                   | Description         |
+| ----------- | ---------------------- | ------------------- |
+| Jobs config | `Config/jobs.json`     | Saved backup jobs   |
+| Settings    | `Config/settings.json` | User preferences    |
+| State       | `State/state.json`     | Real-time progress  |
+| Logs        | `Logs/YYYY-MM-DD.json` | Daily transfer logs |
 
 ## CLI Usage
 
-| Command | Description |
-|---------|-------------|
-| `EasySave.exe` | Start interactive console menu |
+| Command            | Description                          |
+| ------------------ | ------------------------------------ |
+| `EasySave.exe`     | Start interactive console menu       |
 | `EasySave.exe 1-3` | Execute jobs 1, 2 and 3 sequentially |
-| `EasySave.exe 1;3` | Execute jobs 1 and 3 |
+| `EasySave.exe 1;3` | Execute jobs 1 and 3                 |
 
 ## Team
 
-| Member | Role |
-|--------|------|
-| **Bastien** | Backup engine, copy algorithms, orchestrator |
+| Member      | Role                                            |
+| ----------- | ----------------------------------------------- |
+| **Bastien** | Backup engine, copy algorithms, orchestrator    |
 | **Gabriel** | Data management, logs, state files, EasyLog DLL |
-| **Oscar** | Console UI, CLI parsing, i18n, input validation |
+| **Oscar**   | Console UI, CLI parsing, i18n, input validation |
 
 ## License
 
