@@ -37,6 +37,8 @@ public static class AppConfig
         }
     }
 
+    // TODO (Oscar): supprimer MaxJobs (plus de limite en v2), ainsi que FallbackMaxJobs,
+    // la clé MAX_JOBS dans .env et la propriété AppSettings.MaxJobs.
     public static int MaxJobs
     {
         get

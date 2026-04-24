@@ -79,19 +79,11 @@ public class ConsoleMenu
         Console.WriteLine();
 
         _vm.JobList.Refresh();
-        if (_vm.JobList.IsFull)
-        {
-            Console.WriteLine(string.Format(Translator.Get("Error_MaxJobs"), AppConfig.MaxJobs));
-            Wait();
-            return;
-        }
 
         int id;
         if (_vm.Settings.AutoAssignJobId)
         {
-            var next = _vm.JobList.GetNextAvailableId();
-            if (next is null) { Wait(); return; }
-            id = next.Value;
+            id = _vm.JobList.GetNextAvailableId();
         }
         else
         {
@@ -382,13 +374,13 @@ public class ConsoleMenu
     {
         while (true)
         {
-            Console.Write(string.Format(Translator.Get("Prompt_JobIdNew"), AppConfig.MaxJobs));
+            Console.Write(Translator.Get("Prompt_JobIdNewUnlimited"));
             string? input = Console.ReadLine()?.Trim();
             if (IsBack(input)) return null;
 
-            if (!int.TryParse(input, out int id) || id < 1 || id > AppConfig.MaxJobs)
+            if (!int.TryParse(input, out int id) || id < 1)
             {
-                Console.WriteLine(string.Format(Translator.Get("Error_InvalidId"), AppConfig.MaxJobs));
+                Console.WriteLine(Translator.Get("Error_InvalidIdUnlimited"));
                 continue;
             }
             if (_vm.JobList.IdExists(id))

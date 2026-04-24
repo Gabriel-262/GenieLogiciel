@@ -11,4 +11,13 @@ public class AppSettings
     public string? StatePath { get; set; }
     public string? ConfigPath { get; set; }
     public string? LangPath { get; set; }
+
+    // v2 (WPF): "light" or "dark". Ignored by the CLI.
+    public string Theme { get; set; } = "light";
+
+    // TODO (Oscar): nom du processus du logiciel métier (ex: "Calculator", "notepad").
+    // Ajouter: public string? BusinessSoftwareName { get; set; }
+
+    // TODO (Bastien): extensions à chiffrer via CryptoSoft (ex: [".txt", ".pdf"]).
+    // Ajouter: public List<string> EncryptedExtensions { get; set; } = new();
 }
