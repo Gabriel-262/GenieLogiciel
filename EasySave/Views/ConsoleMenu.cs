@@ -64,8 +64,12 @@ public class ConsoleMenu
         }
         else
         {
+            int i = 1;
             foreach (var job in _vm.JobList.Jobs)
-                Console.WriteLine($"  [{job.Id}] {job.Name,-20} {LocalizeType(job.Type),-25} {job.SourcePath} --> {job.TargetPath}");
+            {
+                Console.WriteLine($"  [{i}] (id={job.Id}) {job.Name,-20} {LocalizeType(job.Type),-25} {job.SourcePath} --> {job.TargetPath}");
+                i++;
+            }
         }
 
         Wait();
@@ -86,21 +90,7 @@ public class ConsoleMenu
             return;
         }
 
-        int id;
-        if (_vm.Settings.AutoAssignJobId)
-        {
-            var next = _vm.JobList.GetNextAvailableId();
-            if (next is null) { Wait(); return; }
-            id = next.Value;
-        }
-        else
-        {
-            int? result = PromptNewId();
-            if (result is null) return;
-            id = result.Value;
-        }
-
-        _vm.JobForm.LoadForCreate(id);
+        _vm.JobForm.LoadForCreate();
 
         if (!PromptField(v => _vm.JobForm.Name = v, Translator.Get("Prompt_Name"),
                 InputValidator.IsValidJobName, Translator.Get("Error_InvalidName"))) return;
@@ -128,11 +118,11 @@ public class ConsoleMenu
         Console.WriteLine(BackHint());
         PrintJobList();
         Console.Write(Translator.Get("Prompt_JobId"));
-        string? rawId = Console.ReadLine()?.Trim();
-        if (IsBack(rawId)) return;
-        if (!int.TryParse(rawId, out int id)) { Wait(); return; }
+        string? rawIndex = Console.ReadLine()?.Trim();
+        if (IsBack(rawIndex)) return;
+        if (!int.TryParse(rawIndex, out int index)) { Wait(); return; }
 
-        var existing = _vm.JobList.FindById(id);
+        var existing = _vm.JobList.FindByIndex(index);
         if (existing is null)
         {
             Console.WriteLine(Translator.Get("Error_JobNotFound"));
@@ -168,13 +158,19 @@ public class ConsoleMenu
         Console.WriteLine(BackHint());
         PrintJobList();
         Console.Write(Translator.Get("Prompt_JobId"));
-        string? rawId = Console.ReadLine()?.Trim();
-        if (IsBack(rawId)) return;
-        if (!int.TryParse(rawId, out int id)) { Wait(); return; }
+        string? rawIndex = Console.ReadLine()?.Trim();
+        if (IsBack(rawIndex)) return;
+        if (!int.TryParse(rawIndex, out int index)) { Wait(); return; }
 
-        bool existed = _vm.JobList.FindById(id) is not null;
-        _vm.JobList.DeleteJobCommand.Execute(id);
-        Console.WriteLine(existed ? Translator.Get("Job_Deleted") : Translator.Get("Error_JobNotFound"));
+        var item = _vm.JobList.FindByIndex(index);
+        if (item is null)
+        {
+            Console.WriteLine(Translator.Get("Error_JobNotFound"));
+            Wait();
+            return;
+        }
+        _vm.JobList.DeleteJobCommand.Execute(item.Id);
+        Console.WriteLine(Translator.Get("Job_Deleted"));
         Wait();
     }
 
@@ -184,11 +180,11 @@ public class ConsoleMenu
         Console.WriteLine(BackHint());
         PrintJobList();
         Console.Write(Translator.Get("Prompt_JobId"));
-        string? rawId = Console.ReadLine()?.Trim();
-        if (IsBack(rawId)) return;
-        if (!int.TryParse(rawId, out int id)) { Wait(); return; }
+        string? rawIndex = Console.ReadLine()?.Trim();
+        if (IsBack(rawIndex)) return;
+        if (!int.TryParse(rawIndex, out int index)) { Wait(); return; }
 
-        var job = _vm.JobList.FindById(id);
+        var job = _vm.JobList.FindByIndex(index);
         if (job is null)
         {
             Console.WriteLine(Translator.Get("Error_JobNotFound"));
@@ -197,7 +193,7 @@ public class ConsoleMenu
         }
 
         Console.WriteLine(string.Format(Translator.Get("Job_Executing"), job.Name));
-        _vm.JobList.ExecuteJobCommand.Execute(id);
+        _vm.JobList.ExecuteJobCommand.Execute(job.Id);
         Console.WriteLine(Translator.Get("Job_Done"));
         Wait();
     }
@@ -220,10 +216,6 @@ public class ConsoleMenu
             Console.WriteLine(BackHint());
             Console.WriteLine();
 
-            string onoff = _vm.Settings.AutoAssignJobId
-                ? Translator.Get("Settings_On")
-                : Translator.Get("Settings_Off");
-            Console.WriteLine($"{Translator.Get("Settings_AutoId")}: [{onoff}]");
             Console.WriteLine($"{Translator.Get("Settings_Language")}: {_vm.Settings.LanguageDisplayName}");
             Console.WriteLine($"{Translator.Get("Settings_BackKey")}: [{_vm.Settings.BackKey}]");
             Console.WriteLine($"{Translator.Get("Settings_LogFormat")}: [{_vm.Settings.LogFormat.ToUpperInvariant()}]");
@@ -238,13 +230,12 @@ public class ConsoleMenu
 
             switch (input)
             {
-                case "1": _vm.Settings.ToggleAutoIdCommand.Execute(null);    break;
-                case "2": ChangeLanguage();                                  break;
-                case "3": ChangeBackKey();                                   break;
-                case "4": _vm.Settings.ToggleLogFormatCommand.Execute(null); break;
-                case "5": PathsMenu();                                       break;
-                case "6": ChangeMaxJobs();                                   break;
-                case "7": return;
+                case "1": ChangeLanguage();                                  break;
+                case "2": ChangeBackKey();                                   break;
+                case "3": _vm.Settings.ToggleLogFormatCommand.Execute(null); break;
+                case "4": PathsMenu();                                       break;
+                case "5": ChangeMaxJobs();                                   break;
+                case "6": return;
                 default:
                     Console.WriteLine(Translator.Get("Error_InvalidChoice"));
                     Wait();
@@ -378,28 +369,6 @@ public class ConsoleMenu
         Wait();
     }
 
-    private int? PromptNewId()
-    {
-        while (true)
-        {
-            Console.Write(string.Format(Translator.Get("Prompt_JobIdNew"), AppConfig.MaxJobs));
-            string? input = Console.ReadLine()?.Trim();
-            if (IsBack(input)) return null;
-
-            if (!int.TryParse(input, out int id) || id < 1 || id > AppConfig.MaxJobs)
-            {
-                Console.WriteLine(string.Format(Translator.Get("Error_InvalidId"), AppConfig.MaxJobs));
-                continue;
-            }
-            if (_vm.JobList.IdExists(id))
-            {
-                Console.WriteLine(Translator.Get("Error_IdExists"));
-                continue;
-            }
-            return id;
-        }
-    }
-
     private bool PromptField(Action<string> setter, string label, Func<string, bool> validator, string errorMsg)
     {
         while (true)
@@ -435,8 +404,12 @@ public class ConsoleMenu
     private void PrintJobList()
     {
         _vm.JobList.Refresh();
+        int i = 1;
         foreach (var job in _vm.JobList.Jobs)
-            Console.WriteLine($"  [{job.Id}] {job.Name}");
+        {
+            Console.WriteLine($"  [{i}] {job.Name}");
+            i++;
+        }
         Console.WriteLine();
     }
 

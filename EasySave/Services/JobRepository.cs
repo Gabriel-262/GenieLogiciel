@@ -11,12 +11,21 @@ public class JobRepository
     private readonly object _fileLock = new();
     private readonly PathService _paths;
     private readonly List<JobEntry> _entries;
+    private int _nextId;
     private ILogger? _logger;
+
+    private class StateFile
+    {
+        public int NextId { get; set; } = 1;
+        public List<JobEntry> Entries { get; set; } = new();
+    }
 
     public JobRepository(PathService paths)
     {
         _paths = paths;
-        _entries = LoadFromDisk();
+        var state = LoadFromDisk();
+        _entries = state.Entries;
+        _nextId = state.NextId;
     }
 
     public void SetLogger(ILogger logger) => _logger = logger;
@@ -31,9 +40,13 @@ public class JobRepository
         lock (_fileLock) return _entries.FirstOrDefault(e => e.Id == id)?.ToJob();
     }
 
-    public bool IdExists(int id)
+    public BackupJob? GetJobByIndex(int index1Based)
     {
-        lock (_fileLock) return _entries.Any(e => e.Id == id);
+        lock (_fileLock)
+        {
+            if (index1Based < 1 || index1Based > _entries.Count) return null;
+            return _entries[index1Based - 1].ToJob();
+        }
     }
 
     public int Count
@@ -41,17 +54,17 @@ public class JobRepository
         get { lock (_fileLock) return _entries.Count; }
     }
 
-    public void AddJob(BackupJob job)
+    public BackupJob AddJob(BackupJob job)
     {
         lock (_fileLock)
         {
             if (_entries.Count >= AppConfig.MaxJobs)
                 throw new InvalidOperationException($"Maximum number of backup jobs ({AppConfig.MaxJobs}) reached.");
-            if (_entries.Any(e => e.Id == job.Id))
-                throw new InvalidOperationException($"Job ID {job.Id} already exists.");
 
+            job.Id = _nextId++;
             _entries.Add(JobEntry.FromJob(job));
             SaveToDisk();
+            return job;
         }
     }
 
@@ -129,26 +142,39 @@ public class JobRepository
         }
     }
 
-    private List<JobEntry> LoadFromDisk()
+    private StateFile LoadFromDisk()
     {
         string path = _paths.GetStateFilePath();
-        if (!File.Exists(path)) return new List<JobEntry>();
+        if (!File.Exists(path)) return new StateFile();
 
         try
         {
             string json = File.ReadAllText(path);
-            return JsonSerializer.Deserialize<List<JobEntry>>(json) ?? new List<JobEntry>();
+            using var doc = JsonDocument.Parse(json);
+
+            if (doc.RootElement.ValueKind == JsonValueKind.Array)
+            {
+                var entries = JsonSerializer.Deserialize<List<JobEntry>>(json) ?? new List<JobEntry>();
+                int next = entries.Count == 0 ? 1 : entries.Max(e => e.Id) + 1;
+                return new StateFile { NextId = next, Entries = entries };
+            }
+
+            var state = JsonSerializer.Deserialize<StateFile>(json) ?? new StateFile();
+            if (state.NextId < 1)
+                state.NextId = state.Entries.Count == 0 ? 1 : state.Entries.Max(e => e.Id) + 1;
+            return state;
         }
         catch (JsonException)
         {
-            return new List<JobEntry>();
+            return new StateFile();
         }
     }
 
     private void SaveToDisk()
     {
+        var state = new StateFile { NextId = _nextId, Entries = _entries };
         File.WriteAllText(
             _paths.GetStateFilePath(),
-            JsonSerializer.Serialize(_entries, JsonOptions));
+            JsonSerializer.Serialize(state, JsonOptions));
     }
 }

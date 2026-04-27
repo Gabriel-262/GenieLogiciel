@@ -36,14 +36,8 @@ public partial class JobListViewModel : ObservableObject
     public JobItemViewModel? FindById(int id) =>
         Jobs.FirstOrDefault(j => j.Id == id);
 
-    public int? GetNextAvailableId()
-    {
-        for (int i = 1; i <= AppConfig.MaxJobs; i++)
-            if (!_repo.IdExists(i)) return i;
-        return null;
-    }
-
-    public bool IdExists(int id) => _repo.IdExists(id);
+    public JobItemViewModel? FindByIndex(int index1Based) =>
+        index1Based >= 1 && index1Based <= Jobs.Count ? Jobs[index1Based - 1] : null;
 
     [RelayCommand]
     public void DeleteJob(int id)

@@ -1,8 +1,7 @@
+using EasyLog;
 using EasySave.Models;
 
 namespace EasySave;
-
-public enum LogFormat { Json, Xml }
 
 public static class AppConfig
 {
@@ -46,16 +45,8 @@ public static class AppConfig
         }
     }
 
-    public static LogFormat LogFormat
-    {
-        get
-        {
-            string? raw = Settings?.LogFormat ?? Env("LOG_FORMAT");
-            return string.Equals(raw, "xml", StringComparison.OrdinalIgnoreCase)
-                ? LogFormat.Xml
-                : LogFormat.Json;
-        }
-    }
+    public static LogFormat LogFormat =>
+        LoggerFactory.Parse(Settings?.LogFormat ?? Env("LOG_FORMAT"));
 
     public static string LogDirectory    => ResolveDirectory(Settings?.LogPath    ?? Env("LOG_PATH"),    "Logs");
     public static string StateDirectory  => ResolveDirectory(Settings?.StatePath  ?? Env("STATE_PATH"),  "State");

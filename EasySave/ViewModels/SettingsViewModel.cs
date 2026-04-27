@@ -12,7 +12,6 @@ public partial class SettingsViewModel : ObservableObject
     public SettingsViewModel(SettingsService settings)
     {
         _settings = settings;
-        autoAssignJobId = settings.Current.AutoAssignJobId;
         language = settings.Current.Language;
         backKey = settings.Current.BackKey;
         logFormat = (settings.Current.LogFormat ?? "json").ToLowerInvariant();
@@ -22,8 +21,6 @@ public partial class SettingsViewModel : ObservableObject
         configPath = settings.Current.ConfigPath ?? string.Empty;
         langPath = settings.Current.LangPath ?? string.Empty;
     }
-
-    [ObservableProperty] private bool autoAssignJobId;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(LanguageDisplayName))]
@@ -38,14 +35,6 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private string langPath;
 
     public string LanguageDisplayName => LanguageLabel(Language);
-
-    [RelayCommand]
-    private void ToggleAutoId()
-    {
-        AutoAssignJobId = !AutoAssignJobId;
-        _settings.Current.AutoAssignJobId = AutoAssignJobId;
-        _settings.Save();
-    }
 
     [RelayCommand(CanExecute = nameof(CanChangeLanguage))]
     private void ChangeLanguage(string code)

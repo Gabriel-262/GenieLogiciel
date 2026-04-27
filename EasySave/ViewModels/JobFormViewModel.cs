@@ -44,10 +44,10 @@ public partial class JobFormViewModel : ObservableObject
     public bool IsValidTarget => InputValidator.IsValidPath(TargetPath);
     public bool CanSave => IsValidName && IsValidSource && IsValidTarget;
 
-    public void LoadForCreate(int assignedId)
+    public void LoadForCreate()
     {
         Mode = JobFormMode.Create;
-        Id = assignedId;
+        Id = 0;
         Name = string.Empty;
         SourcePath = string.Empty;
         TargetPath = string.Empty;

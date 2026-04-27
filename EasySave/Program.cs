@@ -16,20 +16,25 @@ Translator.Initialize(pathService.GetLangFilePath);
 Translator.SetLanguage(settingsService.Current.Language);
 
 var repo   = new JobRepository(pathService);
-ILogger logger = AppConfig.LogFormat == LogFormat.Xml
-    ? new XmlAppendLogger(pathService.GetDailyLogFilePath)
-    : new JsonLineLogger(pathService.GetDailyLogFilePath);
+ILogger logger = LoggerFactory.Create(AppConfig.LogFormat, pathService.GetLogDirectory);
 repo.SetLogger(logger);
 var engine = new BackupEngine(repo, logger);
 
 if (args.Length > 0)
 {
-    var ids = CliParser.Parse(args[0]);
-    if (ids.Count == 0)
+    var indices = CliParser.Parse(args[0]);
+    if (indices.Count == 0)
     {
         Console.Error.WriteLine(Translator.Get("Error_InvalidArgs"));
         Environment.Exit(1);
         return;
+    }
+    var jobs = repo.GetAllJobs();
+    var ids = new List<int>();
+    foreach (int index in indices)
+    {
+        if (index < 1 || index > jobs.Count) continue;
+        ids.Add(jobs[index - 1].Id);
     }
     engine.ExecuteJobs(ids);
     return;

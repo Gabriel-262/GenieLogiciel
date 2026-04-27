@@ -9,11 +9,7 @@ public class PathService
         Directory.CreateDirectory(AppConfig.StateDirectory);
     }
 
-    public string GetDailyLogFilePath()
-    {
-        string ext = AppConfig.LogFormat == LogFormat.Xml ? "xml" : "json";
-        return Path.Combine(AppConfig.LogDirectory, $"{DateTime.Now:yyyy-MM-dd}.{ext}");
-    }
+    public string GetLogDirectory() => AppConfig.LogDirectory;
 
     public string GetSettingsFilePath() =>
         Path.Combine(AppConfig.ConfigDirectory, "settings.json");
