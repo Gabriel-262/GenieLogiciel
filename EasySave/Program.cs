@@ -20,7 +20,11 @@ ILogger logger = AppConfig.LogFormat == LogFormat.Xml
     ? new XmlAppendLogger(pathService.GetDailyLogFilePath)
     : new JsonLineLogger(pathService.GetDailyLogFilePath);
 repo.SetLogger(logger);
-var crypto = new CryptoSoftService(settingsService);
+var crypto = new CryptoDispatcher(
+    settingsService,
+    new XorCryptoService(settingsService),
+    new AesCryptoService(settingsService),
+    new EciesCryptoService(settingsService));
 var engine = new BackupEngine(repo, logger, crypto, settingsService);
 
 if (args.Length > 0)

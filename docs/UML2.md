@@ -46,9 +46,11 @@ classDiagram
         +string CryptoMode
         +string? CryptoKey
         +string? CryptoSoftPath
+        +string? CryptoPublicKey
+        +string? CryptoPrivateKey
     }
 
-    note for AppSettings "CryptoMode:\n Rapide   -> XOR\n Standard -> AES-256-CBC"
+    note for AppSettings "CryptoMode:\n Rapide   -> XOR\n Standard -> AES-256-CBC\n Premium  -> ECIES (ECDH P-256 + AES-256-GCM)\nKeypair ECC auto-generee a la 1ere utilisation"
 
     %% ===== Intégration =====
     class BackupEngine {
@@ -72,9 +74,10 @@ classDiagram
         +main(args string[]) int
         -XorTransform(data, key byte[])$ byte[]
         -AesEncrypt(data, key byte[])$ byte[]
+        -EccEncrypt(data byte[], pubKeyB64 string)$ byte[]
     }
 
-    note for CryptoSoftExe "CLI: CryptoSoft.exe <file> <key> <xor|aes>\nExit: 0 OK / 1 args / 2 not found / 3 crypto error"
+    note for CryptoSoftExe "CLI: CryptoSoft.exe <file> <key> <xor|aes|ecc>\n  xor/aes: <key> = passphrase\n  ecc    : <key> = clé publique destinataire (base64 SPKI)\nExit: 0 OK / 1 args / 2 not found / 3 crypto error"
 
     %% ===== Relations =====
     ICryptoSoft <|.. CryptoSoftService
@@ -91,7 +94,7 @@ classDiagram
 
 ## 2. Diagramme de séquence — Sauvegarde avec chiffrement
 
-Flux d'un fichier dont l'extension figure dans `AppSettings.EncryptedExtensions`. Cas nominal en mode **Rapide** (XOR). Pour le mode **Standard**, seul l'argument `algo` passé à l'exe change (`aes` au lieu de `xor`).
+Flux d'un fichier dont l'extension figure dans `AppSettings.EncryptedExtensions`. Cas nominal en mode **Rapide** (XOR). En **Standard** seul l'argument `algo` change (`aes`). En **Premium**, voir ci-dessous: la clé passée à l'exe est la clé publique ECC (et non la passphrase), et le service garantit la présence d'une keypair via `EnsureEccKeyPair()`.
 
 ```mermaid
 sequenceDiagram
@@ -140,6 +143,39 @@ sequenceDiagram
     Engine-->>User: JobCompleted
 ```
 
+### Mode Premium (ECC) — flux spécifique
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Engine as BackupEngine
+    participant Crypto as CryptoSoftService
+    participant Settings as SettingsService
+    participant Exe as CryptoSoft.exe
+
+    Engine->>Crypto: Encrypt(destination)
+    Crypto->>Settings: CryptoMode
+    Settings-->>Crypto: "Premium" -> algo "ecc"
+
+    Crypto->>Crypto: EnsureEccKeyPair()
+    alt keypair absente
+        Crypto->>Crypto: ECDiffieHellman.Create(P-256)
+        Crypto->>Settings: CryptoPublicKey, CryptoPrivateKey (base64)
+        Crypto->>Settings: Save()
+    end
+
+    Crypto->>Exe: Process.Start(file, recipientPubKeyB64, "ecc")
+
+    Exe->>Exe: import recipient pub (SPKI)
+    Exe->>Exe: ECDH ephemeral keypair (P-256)
+    Exe->>Exe: shared = DeriveKeyFromHash(SHA-256)
+    Exe->>Exe: AES-256-GCM(nonce, data) -> cipher + tag
+    Exe->>Exe: write [ephemPubLen][ephemPub][nonce][tag][cipher]
+    Exe-->>Crypto: exit code 0
+
+    Crypto-->>Engine: cryptoMs (>0)
+```
+
 ### Variantes d'erreur (CryptoTimeMs négatif)
 
 ```mermaid
@@ -174,3 +210,4 @@ sequenceDiagram
 - **IV AES**: généré aléatoirement à chaque chiffrement et préfixé au ciphertext (`IV || ciphertext`).
 - **Mesure de la durée**: c'est `CryptoSoftService` (côté EasySave) qui chronomètre l'appel `Process.Start` → `WaitForExit`, pas l'exe lui-même. Garantit la cohérence des unités même si CryptoSoft évolue.
 - **Codes erreur négatifs**: stables et distincts (`-1` fichier, `-2` exe, `-3` exit code), exploitables côté supervision/log analytics.
+- **Mode Premium / ECIES**: chiffrement asymétrique de bout en bout sans secret partagé à l'avance. La keypair P-256 du destinataire est auto-générée à la première utilisation et persistée en base64 dans `settings.json` (PKCS#8 pour la privée, SubjectPublicKeyInfo pour la publique). Chaque fichier utilise sa propre clé symétrique éphémère dérivée par ECDH+SHA-256, puis AES-256-GCM (chiffrement authentifié — détecte toute altération du fichier chiffré). La clé privée stockée permet la décryption ultérieure.

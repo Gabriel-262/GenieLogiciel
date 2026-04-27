@@ -107,7 +107,12 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private void ToggleCryptoMode()
     {
-        CryptoMode = CryptoMode == "Standard" ? "Rapide" : "Standard";
+        CryptoMode = CryptoMode switch
+        {
+            "Rapide"   => "Standard",
+            "Standard" => "Premium",
+            _          => "Rapide"
+        };
         _settings.Current.CryptoMode = CryptoMode;
         _settings.Save();
     }

@@ -14,9 +14,14 @@ public class AppSettings
 
     public List<string> EncryptedExtensions { get; set; } = new();
 
-    // "Rapide" (XOR) ou "Standard" (AES)
+    // "Rapide" (XOR), "Standard" (AES) ou "Premium" (ECIES: ECDH P-256 + AES-GCM)
     public string CryptoMode { get; set; } = "Rapide";
 
     public string? CryptoKey { get; set; }
     public string? CryptoSoftPath { get; set; }
+
+    // Mode Premium: keypair ECC du destinataire (base64). Auto-générée à la
+    // première utilisation si absente. Privée stockée pour pouvoir déchiffrer.
+    public string? CryptoPublicKey { get; set; }
+    public string? CryptoPrivateKey { get; set; }
 }

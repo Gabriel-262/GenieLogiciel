@@ -9,7 +9,7 @@
   "ConfigPath": null,
   "LangPath": null,
   "EncryptedExtensions": [".txt", ".docx", ".pdf"],
-  "CryptoMode": "Rapide",
+  "CryptoMode": "Rapide", //Standard Rapide Premium
   "CryptoKey": "TelAvivMaseltov",
   "CryptoSoftPath": null
 }
