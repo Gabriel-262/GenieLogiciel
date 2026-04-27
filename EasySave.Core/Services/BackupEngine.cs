@@ -30,10 +30,31 @@ public class BackupEngine
         }
     }
 
+    public Task ExecuteJobsAsync(IEnumerable<int> jobIds, CancellationToken ct = default)
+    {
+        var ids = jobIds.ToList();
+        return Task.Run(() =>
+        {
+            foreach (int id in ids)
+            {
+                if (ct.IsCancellationRequested) break;
+                var job = _repo.GetJobById(id);
+                if (job is null) continue;
+                ExecuteJob(job);
+            }
+        }, ct);
+    }
+
+    public Task ExecuteJobAsync(BackupJob job, CancellationToken ct = default)
+        => Task.Run(() => ExecuteJob(job), ct);
+
     public void ExecuteJob(BackupJob job)
     {
         if (!Directory.Exists(job.SourcePath)) return;
         Directory.CreateDirectory(job.TargetPath);
+
+        // TODO (Oscar): avant de démarrer le job, vérifier IBusinessSoftwareMonitor.IsRunning().
+        // Si détecté, logger (LogAction.BusinessSoftwareDetected ou champ dédié) et sortir sans exécuter.
 
         JobStarted?.Invoke(this, job.Name);
 
@@ -74,6 +95,11 @@ public class BackupEngine
             bool existedBefore = File.Exists(destination);
             long elapsedMs = CopyFile(sourceFile.FullName, destination);
 
+            // TODO (Bastien): si l'extension du fichier est dans AppSettings.EncryptedExtensions,
+            // appeler ICryptoSoft.Encrypt(destination) et récupérer la valeur (ms ou code erreur)
+            // pour la passer dans LogEntry.CryptoTimeMs ci-dessous.
+            long cryptoTimeMs = 0;
+
             _logger.Log(new LogEntry
             {
                 Timestamp = DateTime.Now,
@@ -83,11 +109,16 @@ public class BackupEngine
                 DestinationFilePath = destination,
                 FileSizeBytes = sourceFile.Length,
                 TransferTimeMs = elapsedMs
+                // TODO (Bastien): CryptoTimeMs = cryptoTimeMs (une fois le champ ajouté dans LogEntry)
             });
+            _ = cryptoTimeMs;
 
             processed++;
             bytesDone += sourceFile.Length;
             PushProgress(job, sourceFile.FullName, destination, processed, totalFiles, bytesDone, totalSize);
+
+            // TODO (Oscar): après chaque fichier copié, vérifier IBusinessSoftwareMonitor.IsRunning().
+            // Si détecté, logger et interrompre la boucle (on a déjà fini le fichier courant).
         }
 
         RemoveOrphans(job, files);
