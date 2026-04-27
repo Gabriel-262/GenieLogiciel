@@ -45,8 +45,6 @@ public class JobRepository
     {
         lock (_fileLock)
         {
-            if (_entries.Count >= AppConfig.MaxJobs)
-                throw new InvalidOperationException($"Maximum number of backup jobs ({AppConfig.MaxJobs}) reached.");
             if (_entries.Any(e => e.Id == job.Id))
                 throw new InvalidOperationException($"Job ID {job.Id} already exists.");
 

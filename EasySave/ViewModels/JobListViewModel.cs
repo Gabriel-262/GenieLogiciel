@@ -21,7 +21,6 @@ public partial class JobListViewModel : ObservableObject
 
     public int Count => Jobs.Count;
     public bool IsEmpty => Jobs.Count == 0;
-    public bool IsFull => Jobs.Count >= AppConfig.MaxJobs;
 
     public void Refresh()
     {
@@ -30,17 +29,16 @@ public partial class JobListViewModel : ObservableObject
             Jobs.Add(new JobItemViewModel(job));
         OnPropertyChanged(nameof(Count));
         OnPropertyChanged(nameof(IsEmpty));
-        OnPropertyChanged(nameof(IsFull));
     }
 
     public JobItemViewModel? FindById(int id) =>
         Jobs.FirstOrDefault(j => j.Id == id);
 
-    public int? GetNextAvailableId()
+    public int GetNextAvailableId()
     {
-        for (int i = 1; i <= AppConfig.MaxJobs; i++)
-            if (!_repo.IdExists(i)) return i;
-        return null;
+        int i = 1;
+        while (_repo.IdExists(i)) i++;
+        return i;
     }
 
     public bool IdExists(int id) => _repo.IdExists(id);
