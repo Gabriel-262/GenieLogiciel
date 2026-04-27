@@ -24,5 +24,6 @@ Thumbs.db
 .env.local
 local.settings.json
 
+.claude/
 Logs/
 State/

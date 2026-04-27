@@ -9,11 +9,16 @@ public class BackupEngine
 {
     private readonly JobRepository _repo;
     private readonly ILogger _logger;
+    private readonly ICryptoSoft? _crypto;
+    private readonly SettingsService? _settings;
 
-    public BackupEngine(JobRepository repo, ILogger logger)
+    public BackupEngine(JobRepository repo, ILogger logger,
+        ICryptoSoft? crypto = null, SettingsService? settings = null)
     {
         _repo = repo;
         _logger = logger;
+        _crypto = crypto;
+        _settings = settings;
     }
 
     public event EventHandler<BackupProgressEventArgs>? ProgressChanged;
@@ -74,6 +79,12 @@ public class BackupEngine
             bool existedBefore = File.Exists(destination);
             long elapsedMs = CopyFile(sourceFile.FullName, destination);
 
+            long cryptoMs = 0;
+            if (_crypto is not null && elapsedMs >= 0 && ShouldEncrypt(sourceFile.FullName))
+            {
+                cryptoMs = _crypto.Encrypt(destination);
+            }
+
             _logger.Log(new LogEntry
             {
                 Timestamp = DateTime.Now,
@@ -82,7 +93,8 @@ public class BackupEngine
                 SourceFilePath = sourceFile.FullName,
                 DestinationFilePath = destination,
                 FileSizeBytes = sourceFile.Length,
-                TransferTimeMs = elapsedMs
+                TransferTimeMs = elapsedMs,
+                CryptoTimeMs = cryptoMs
             });
 
             processed++;
@@ -152,6 +164,25 @@ public class BackupEngine
             BytesDone = bytesDone,
             ProgressPercent = percent
         });
+    }
+
+    private bool ShouldEncrypt(string sourceFilePath)
+    {
+        var extensions = _settings?.Current.EncryptedExtensions;
+        if (extensions is null || extensions.Count == 0) return false;
+
+        string ext = Path.GetExtension(sourceFilePath);
+        if (string.IsNullOrEmpty(ext)) return false;
+
+        return extensions.Any(e => string.Equals(
+            NormalizeExtension(e), ext, StringComparison.OrdinalIgnoreCase));
+    }
+
+    internal static string NormalizeExtension(string ext)
+    {
+        ext = ext.Trim().ToLowerInvariant();
+        if (ext.Length == 0) return ext;
+        return ext.StartsWith('.') ? ext : "." + ext;
     }
 
     private static List<FileInfo> ScanDirectory(string root)

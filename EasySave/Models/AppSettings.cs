@@ -11,4 +11,12 @@ public class AppSettings
     public string? StatePath { get; set; }
     public string? ConfigPath { get; set; }
     public string? LangPath { get; set; }
+
+    public List<string> EncryptedExtensions { get; set; } = new();
+
+    // "Rapide" (XOR) ou "Standard" (AES)
+    public string CryptoMode { get; set; } = "Rapide";
+
+    public string? CryptoKey { get; set; }
+    public string? CryptoSoftPath { get; set; }
 }
