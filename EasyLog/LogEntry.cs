@@ -1,6 +1,6 @@
 namespace EasyLog;
 
-public enum LogAction { Create, Update, Delete, JobUpdated, JobDeleted }
+public enum LogAction { Create, Update, Delete, JobUpdated, JobDeleted, BusinessSoftwareDetected }
 
 public class LogEntry
 {
