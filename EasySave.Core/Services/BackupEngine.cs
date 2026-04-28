@@ -120,6 +120,7 @@ public class BackupEngine
             _logger.Log(new LogEntry
             {
                 Timestamp = DateTime.Now,
+                JobId = job.Id,
                 BackupName = job.Name,
                 Action = existedBefore ? LogAction.Update : LogAction.Create,
                 SourceFilePath = sourceFile.FullName,
@@ -182,6 +183,7 @@ public class BackupEngine
             _logger.Log(new LogEntry
             {
                 Timestamp = DateTime.Now,
+                JobId = job.Id,
                 BackupName = job.Name,
                 Action = LogAction.Delete,
                 SourceFilePath = string.Empty,

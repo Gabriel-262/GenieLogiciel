@@ -2,7 +2,7 @@
   "AutoAssignJobId": false,
   "Language": "en",
   "BackKey": "r",
-  "LogFormat": "json",
+  "LogFormat": "xml",
   "MaxJobs": null,
   "BusinessSoftwareName": "",
   "LogPath": null,
@@ -14,7 +14,7 @@
     ".docx",
     ".pdf"
   ],
-  "CryptoMode": "Rapide",
+  "CryptoMode": "Standard",
   "CryptoKey": "TelAvivMaseltov",
   "CryptoSoftPath": null,
   "CryptoPublicKey": null,

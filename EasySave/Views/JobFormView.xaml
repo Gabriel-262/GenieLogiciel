@@ -10,7 +10,6 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -24,42 +23,39 @@
                    Text="{Binding Mode, StringFormat=Job - {0}}"
                    Style="{StaticResource H1}"/>
 
-        <TextBlock Grid.Row="1" Grid.Column="0" Text="ID" VerticalAlignment="Center" Margin="0,4"/>
-        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Id}" VerticalAlignment="Center" Margin="0,4"/>
-
-        <TextBlock Grid.Row="2" Grid.Column="0" Text="Name" VerticalAlignment="Center" Margin="0,4"/>
-        <TextBox   Grid.Row="2" Grid.Column="1" Margin="0,4"
+        <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource UI_Col_Name}" VerticalAlignment="Center" Margin="0,4"/>
+        <TextBox   Grid.Row="1" Grid.Column="1" Margin="0,4"
                    Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"/>
 
-        <TextBlock Grid.Row="3" Grid.Column="0" Text="Source" VerticalAlignment="Center" Margin="0,4"/>
-        <TextBox   Grid.Row="3" Grid.Column="1" Margin="0,4"
+        <TextBlock Grid.Row="2" Grid.Column="0" Text="{DynamicResource UI_Col_Source}" VerticalAlignment="Center" Margin="0,4"/>
+        <TextBox   Grid.Row="2" Grid.Column="1" Margin="0,4"
                    Text="{Binding SourcePath, UpdateSourceTrigger=PropertyChanged}"/>
-        <Button    Grid.Row="3" Grid.Column="2" Content="..." Margin="6,4,0,4" Click="BrowseSource_Click"/>
+        <Button    Grid.Row="2" Grid.Column="2" Content="..." Margin="6,4,0,4" Click="BrowseSource_Click"/>
 
-        <TextBlock Grid.Row="4" Grid.Column="0" Text="Target" VerticalAlignment="Center" Margin="0,4"/>
-        <TextBox   Grid.Row="4" Grid.Column="1" Margin="0,4"
+        <TextBlock Grid.Row="3" Grid.Column="0" Text="{DynamicResource UI_Col_Target}" VerticalAlignment="Center" Margin="0,4"/>
+        <TextBox   Grid.Row="3" Grid.Column="1" Margin="0,4"
                    Text="{Binding TargetPath, UpdateSourceTrigger=PropertyChanged}"/>
-        <Button    Grid.Row="4" Grid.Column="2" Content="..." Margin="6,4,0,4" Click="BrowseTarget_Click"/>
+        <Button    Grid.Row="3" Grid.Column="2" Content="..." Margin="6,4,0,4" Click="BrowseTarget_Click"/>
 
-        <TextBlock Grid.Row="5" Grid.Column="0" Text="Type" VerticalAlignment="Center" Margin="0,4"/>
-        <ComboBox  Grid.Row="5" Grid.Column="1" Margin="0,4"
+        <TextBlock Grid.Row="4" Grid.Column="0" Text="{DynamicResource UI_Col_Type}" VerticalAlignment="Center" Margin="0,4"/>
+        <ComboBox  Grid.Row="4" Grid.Column="1" Margin="0,4"
                    SelectedValue="{Binding Type}"
                    SelectedValuePath="Tag">
-            <ComboBoxItem Content="Full"         Tag="{x:Static models:BackupType.Full}"/>
-            <ComboBoxItem Content="Differential" Tag="{x:Static models:BackupType.Differential}"/>
+            <ComboBoxItem Content="{DynamicResource UI_Form_Type_Full}"         Tag="{x:Static models:BackupType.Full}"/>
+            <ComboBoxItem Content="{DynamicResource UI_Form_Type_Differential}" Tag="{x:Static models:BackupType.Differential}"/>
         </ComboBox>
 
-        <TextBlock Grid.Row="6" Grid.ColumnSpan="3"
+        <TextBlock Grid.Row="5" Grid.ColumnSpan="3"
                    Style="{StaticResource Muted}"
                    Margin="0,8,0,0">
-            <Run Text="Valid: "/>
+            <Run Text="{DynamicResource UI_Form_Valid}"/>
             <Run Text="{Binding CanSave, Mode=OneWay}"/>
         </TextBlock>
 
-        <StackPanel Grid.Row="8" Grid.ColumnSpan="3" Orientation="Horizontal"
+        <StackPanel Grid.Row="7" Grid.ColumnSpan="3" Orientation="Horizontal"
                     HorizontalAlignment="Right" Margin="0,16,0,0">
-            <Button Content="Cancel" Click="Cancel_Click"/>
-            <Button Content="Save"   Style="{StaticResource PrimaryButton}"
+            <Button Content="{DynamicResource UI_Btn_Cancel}" Click="Cancel_Click"/>
+            <Button Content="{DynamicResource UI_Btn_Save}"   Style="{StaticResource PrimaryButton}"
                     Command="{Binding SaveCommand}" Click="Save_Click"/>
         </StackPanel>
     </Grid>

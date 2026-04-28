@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:EasySave.Views"
-        Title="EasySave v2.0"
+        Title="{DynamicResource UI_Window_Main_Title}"
         Width="1100" Height="700"
         MinWidth="800" MinHeight="520"
         Style="{StaticResource AppWindow}"
@@ -26,9 +26,9 @@
                            Foreground="{DynamicResource AccentBrush}" Margin="0,0,0,4"/>
                 <TextBlock Text="v2.0" Style="{StaticResource Muted}" Margin="0,0,0,24"/>
 
-                <Button Content="Jobs"      Margin="0,0,0,6" Click="NavJobs_Click"      HorizontalContentAlignment="Left"/>
-                <Button Content="Execution" Margin="0,0,0,6" Click="NavExecution_Click" HorizontalContentAlignment="Left"/>
-                <Button Content="Settings"  Margin="0,0,0,6" Click="NavSettings_Click"  HorizontalContentAlignment="Left"/>
+                <Button Content="{DynamicResource UI_Sidebar_Jobs}"      Margin="0,0,0,6" Click="NavJobs_Click"      HorizontalContentAlignment="Left"/>
+                <Button Content="{DynamicResource UI_Sidebar_Execution}" Margin="0,0,0,6" Click="NavExecution_Click" HorizontalContentAlignment="Left"/>
+                <Button Content="{DynamicResource UI_Sidebar_Settings}"  Margin="0,0,0,6" Click="NavSettings_Click"  HorizontalContentAlignment="Left"/>
 
                 <TextBlock Text="{Binding Settings.LanguageDisplayName}"
                            Style="{StaticResource Muted}" Margin="0,24,0,0"/>

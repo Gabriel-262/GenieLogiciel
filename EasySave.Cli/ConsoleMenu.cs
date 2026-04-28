@@ -298,6 +298,7 @@ public class ConsoleMenu
         Console.WriteLine("2. Français");
         Console.WriteLine("3. 中文");
         Console.WriteLine("4. עברית");
+        Console.WriteLine("5. Kreyòl");
         Console.WriteLine();
         Console.Write(Translator.Get("Prompt_Choice"));
 
@@ -310,6 +311,7 @@ public class ConsoleMenu
             "2" => "fr",
             "3" => "zh",
             "4" => "he",
+            "5" => "ht",
             _   => null
         };
 

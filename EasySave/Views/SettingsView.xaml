@@ -3,25 +3,26 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel>
-            <TextBlock Text="Settings" Style="{StaticResource H1}"/>
+            <TextBlock Text="{DynamicResource UI_Settings_Title}" Style="{StaticResource H1}"/>
 
             <!-- General -->
             <Border Style="{StaticResource Card}" Margin="0,0,0,16">
                 <StackPanel>
-                    <TextBlock Text="General" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                    <TextBlock Text="{DynamicResource UI_Settings_General}" FontWeight="SemiBold" Margin="0,0,0,12"/>
 
-                    <TextBlock Text="Language" Style="{StaticResource Muted}"/>
+                    <TextBlock Text="{DynamicResource UI_Settings_Language}" Style="{StaticResource Muted}"/>
                     <StackPanel Orientation="Horizontal" Margin="0,4,0,12">
                         <Button Content="English"  Click="Lang_Click" Tag="en"/>
                         <Button Content="Français" Click="Lang_Click" Tag="fr"/>
                         <Button Content="中文"     Click="Lang_Click" Tag="zh"/>
                         <Button Content="עברית"   Click="Lang_Click" Tag="he"/>
+                        <Button Content="Kreyòl"  Click="Lang_Click" Tag="ht"/>
                     </StackPanel>
 
-                    <TextBlock Text="Theme" Style="{StaticResource Muted}"/>
+                    <TextBlock Text="{DynamicResource UI_Settings_Theme}" Style="{StaticResource Muted}"/>
                     <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                        <Button Content="Light" Click="Theme_Click" Tag="light"/>
-                        <Button Content="Dark"  Click="Theme_Click" Tag="dark"/>
+                        <Button Content="{DynamicResource UI_Theme_Light}" Click="Theme_Click" Tag="light"/>
+                        <Button Content="{DynamicResource UI_Theme_Dark}"  Click="Theme_Click" Tag="dark"/>
                     </StackPanel>
                 </StackPanel>
             </Border>
@@ -29,12 +30,12 @@
             <!-- Logging -->
             <Border Style="{StaticResource Card}" Margin="0,0,0,16">
                 <StackPanel>
-                    <TextBlock Text="Logging" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                    <TextBlock Text="{DynamicResource UI_Settings_Logging}" FontWeight="SemiBold" Margin="0,0,0,12"/>
                     <TextBlock Style="{StaticResource Muted}">
-                        <Run Text="Format: "/>
+                        <Run Text="{DynamicResource UI_Settings_Format}"/>
                         <Run Text="{Binding LogFormat, Mode=OneWay}"/>
                     </TextBlock>
-                    <Button Content="Toggle JSON / XML" Margin="0,6,0,0"
+                    <Button Content="{DynamicResource UI_Settings_ToggleLogFormat}" Margin="0,6,0,0"
                             Command="{Binding ToggleLogFormatCommand}"/>
                 </StackPanel>
             </Border>
@@ -42,9 +43,9 @@
             <!-- Business software -->
             <Border Style="{StaticResource Card}" Margin="0,0,0,16">
                 <StackPanel>
-                    <TextBlock Text="Business software monitor" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                    <TextBlock Text="{DynamicResource UI_Settings_BizMonitor}" FontWeight="SemiBold" Margin="0,0,0,6"/>
                     <TextBlock Style="{StaticResource Muted}"
-                               Text="Backups are paused when this process is running."/>
+                               Text="{DynamicResource UI_Settings_BizMonitorDesc}"/>
                     <Grid Margin="0,8,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -52,7 +53,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBox x:Name="BusinessSoftwareBox" Grid.Column="0"
                                  Text="{Binding BusinessSoftwareName, UpdateSourceTrigger=PropertyChanged}"/>
-                        <Button Grid.Column="1" Content="Save" Margin="8,0,0,0"
+                        <Button Grid.Column="1" Content="{DynamicResource UI_Btn_Save}" Margin="8,0,0,0"
                                 Style="{StaticResource PrimaryButton}"
                                 Command="{Binding ChangeBusinessSoftwareNameCommand}"
                                 CommandParameter="{Binding Text, ElementName=BusinessSoftwareBox}"/>
@@ -63,18 +64,18 @@
             <!-- Encryption -->
             <Border Style="{StaticResource Card}" Margin="0,0,0,16">
                 <StackPanel>
-                    <TextBlock Text="Encryption (CryptoSoft)" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                    <TextBlock Text="{DynamicResource UI_Settings_Encryption}" FontWeight="SemiBold" Margin="0,0,0,6"/>
                     <TextBlock Style="{StaticResource Muted}"
-                               Text="File extensions encrypted after copy."/>
+                               Text="{DynamicResource UI_Settings_EncryptionDesc}"/>
 
-                    <TextBlock Text="Mode" Style="{StaticResource Muted}" Margin="0,12,0,4"/>
+                    <TextBlock Text="{DynamicResource UI_Settings_Mode}" Style="{StaticResource Muted}" Margin="0,12,0,4"/>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                         <TextBlock Text="{Binding CryptoMode}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                        <Button Content="Toggle (Rapide / Standard / Premium)"
+                        <Button Content="{DynamicResource UI_Settings_ToggleCryptoMode}"
                                 Command="{Binding ToggleCryptoModeCommand}"/>
                     </StackPanel>
 
-                    <TextBlock Text="Extensions" Style="{StaticResource Muted}" Margin="0,0,0,4"/>
+                    <TextBlock Text="{DynamicResource UI_Settings_Extensions}" Style="{StaticResource Muted}" Margin="0,0,0,4"/>
                     <ItemsControl ItemsSource="{Binding EncryptedExtensions}" Margin="0,0,0,8">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -105,7 +106,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBox x:Name="NewExtensionBox" Grid.Column="0"
                                  Tag="e.g. .txt"/>
-                        <Button Grid.Column="1" Content="Add" Margin="8,0,0,0"
+                        <Button Grid.Column="1" Content="{DynamicResource UI_Btn_Add}" Margin="8,0,0,0"
                                 Style="{StaticResource PrimaryButton}"
                                 Command="{Binding AddExtensionCommand}"
                                 CommandParameter="{Binding Text, ElementName=NewExtensionBox}"/>
@@ -116,14 +117,14 @@
             <!-- Paths -->
             <Border Style="{StaticResource Card}">
                 <StackPanel>
-                    <TextBlock Text="Paths (apply on restart)" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                    <TextBlock Text="{DynamicResource UI_Settings_PathsHeader}" FontWeight="SemiBold" Margin="0,0,0,12"/>
 
                     <Grid Margin="0,0,0,6">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="120"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="Log"     VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="0" Text="{DynamicResource UI_Path_Log}"   VerticalAlignment="Center"/>
                         <TextBox   Grid.Column="1" Text="{Binding LogPath, UpdateSourceTrigger=PropertyChanged}"/>
                     </Grid>
                     <Grid Margin="0,0,0,6">
@@ -131,7 +132,7 @@
                             <ColumnDefinition Width="120"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="State"   VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="0" Text="{DynamicResource UI_Path_State}" VerticalAlignment="Center"/>
                         <TextBox   Grid.Column="1" Text="{Binding StatePath, UpdateSourceTrigger=PropertyChanged}"/>
                     </Grid>
                     <Grid Margin="0,0,0,6">
@@ -139,7 +140,7 @@
                             <ColumnDefinition Width="120"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="Config"  VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="0" Text="{DynamicResource UI_Path_Config}" VerticalAlignment="Center"/>
                         <TextBox   Grid.Column="1" Text="{Binding ConfigPath, UpdateSourceTrigger=PropertyChanged}"/>
                     </Grid>
                     <Grid Margin="0,0,0,6">
@@ -147,12 +148,12 @@
                             <ColumnDefinition Width="120"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="Lang"    VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="0" Text="{DynamicResource UI_Path_Lang}"  VerticalAlignment="Center"/>
                         <TextBox   Grid.Column="1" Text="{Binding LangPath, UpdateSourceTrigger=PropertyChanged}"/>
                     </Grid>
 
                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                        <Button Content="Save paths" Style="{StaticResource PrimaryButton}" Click="SavePaths_Click"/>
+                        <Button Content="{DynamicResource UI_Btn_SavePaths}" Style="{StaticResource PrimaryButton}" Click="SavePaths_Click"/>
                     </StackPanel>
                 </StackPanel>
             </Border>

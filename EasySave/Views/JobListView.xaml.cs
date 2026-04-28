@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using EasySave.Resources;
 using EasySave.ViewModels;
 
 namespace EasySave.Views;
@@ -18,8 +19,8 @@ public partial class JobListView : UserControl
         if (Vm.JobList.IsFull)
         {
             MessageBox.Show(
-                $"Maximum number of backup jobs ({AppConfig.MaxJobs}) reached.",
-                "Cannot add job", MessageBoxButton.OK, MessageBoxImage.Warning);
+                string.Format(Translator.Get("Error_MaxJobs"), AppConfig.MaxJobs),
+                Translator.Get("UI_Cannot_AddJob"), MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
         Vm.JobForm.LoadForCreate();
@@ -39,8 +40,8 @@ public partial class JobListView : UserControl
     {
         if (Grid.SelectedItem is not JobItemViewModel selected) return;
         var confirm = MessageBox.Show(
-            $"Delete job \"{selected.Name}\" (id {selected.Id})?",
-            "Confirm delete", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            string.Format(Translator.Get("UI_Confirm_DeleteJob"), selected.Name, selected.Id),
+            Translator.Get("UI_Confirm_DeleteTitle"), MessageBoxButton.YesNo, MessageBoxImage.Question);
         if (confirm != MessageBoxResult.Yes) return;
         Vm.JobList.DeleteJobCommand.Execute(selected.Id);
     }

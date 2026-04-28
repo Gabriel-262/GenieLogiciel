@@ -84,6 +84,7 @@ public class JobRepository
             _logger?.Log(new LogEntry
             {
                 Timestamp = DateTime.Now,
+                JobId = id,
                 BackupName = updated.Name,
                 Action = LogAction.JobUpdated,
                 SourceFilePath = updated.SourcePath,
@@ -105,6 +106,7 @@ public class JobRepository
             _logger?.Log(new LogEntry
             {
                 Timestamp = DateTime.Now,
+                JobId = entry.Id,
                 BackupName = entry.Name,
                 Action = LogAction.JobDeleted,
                 SourceFilePath = entry.SourcePath,

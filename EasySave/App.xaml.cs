@@ -20,7 +20,9 @@ public partial class App : Application
         AppConfig.Settings  = settingsService.Current;
 
         Translator.Initialize(pathService.GetLangFilePath);
+        Translator.LanguageChanged += SyncLocalizedResources;
         Translator.SetLanguage(settingsService.Current.Language);
+        SyncLocalizedResources();
 
         var repo   = new JobRepository(pathService);
         ILogger logger = LoggerFactory.Create(AppConfig.LogFormat, pathService.GetLogDirectory);
@@ -36,5 +38,15 @@ public partial class App : Application
         var theme = string.Equals(settingsService.Current.Theme, "dark", StringComparison.OrdinalIgnoreCase)
             ? AppTheme.Dark : AppTheme.Light;
         ThemeManager.Apply(theme);
+    }
+
+    private static void SyncLocalizedResources()
+    {
+        if (Current is null) return;
+        var res = Current.Resources;
+        foreach (var kv in Translator.FallbackStrings)
+            res[kv.Key] = kv.Value;
+        foreach (var kv in Translator.Strings)
+            res[kv.Key] = kv.Value;
     }
 }

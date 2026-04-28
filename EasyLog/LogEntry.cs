@@ -5,6 +5,7 @@ public enum LogAction { Create, Update, Delete, JobUpdated, JobDeleted, Business
 public class LogEntry
 {
     public DateTime Timestamp { get; set; } = DateTime.Now;
+    public int JobId { get; set; }
     public string BackupName { get; set; } = string.Empty;
     public LogAction Action { get; set; } = LogAction.Create;
     public string SourceFilePath { get; set; } = string.Empty;

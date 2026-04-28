@@ -145,7 +145,7 @@ public partial class SettingsViewModel : ObservableObject
         input.Trim().Equals(BackKey, StringComparison.OrdinalIgnoreCase);
 
     public static bool IsSupportedLanguage(string? code) =>
-        code is "en" or "fr" or "zh" or "he";
+        code is "en" or "fr" or "zh" or "he" or "ht";
 
     public static string LanguageLabel(string code) => code switch
     {
@@ -153,6 +153,7 @@ public partial class SettingsViewModel : ObservableObject
         "fr" => "Français",
         "zh" => "中文",
         "he" => "עברית",
+        "ht" => "Kreyòl",
         _    => code
     };
 }

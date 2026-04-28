@@ -8,6 +8,11 @@ public static class Translator
     private static Dictionary<string, string> _fallback = new();
     private static Func<string, string>? _pathResolver;
 
+    public static event Action? LanguageChanged;
+
+    public static IReadOnlyDictionary<string, string> Strings => _current;
+    public static IReadOnlyDictionary<string, string> FallbackStrings => _fallback;
+
     public static void Initialize(Func<string, string> langFilePathFor)
     {
         _pathResolver = langFilePathFor;
@@ -19,6 +24,7 @@ public static class Translator
     {
         if (_pathResolver is null) return;
         _current = LoadFile(code);
+        LanguageChanged?.Invoke();
     }
 
     public static string Get(string key)

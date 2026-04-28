@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using EasySave.Resources;
 using EasySave.Services;
 using EasySave.ViewModels;
 
@@ -35,7 +36,7 @@ public partial class SettingsView : UserControl
         Vm.ChangeStatePathCommand.Execute(Vm.StatePath);
         Vm.ChangeConfigPathCommand.Execute(Vm.ConfigPath);
         Vm.ChangeLangPathCommand.Execute(Vm.LangPath);
-        MessageBox.Show("Paths saved. Restart the application to apply.", "Settings",
+        MessageBox.Show(Translator.Get("UI_Settings_PathsSaved"), Translator.Get("UI_Settings_Title"),
             MessageBoxButton.OK, MessageBoxImage.Information);
     }
 }
