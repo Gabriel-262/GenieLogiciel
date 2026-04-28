@@ -1,0 +1,15 @@
+{
+  "AutoAssignJobId": false,
+  "Language": "fr",
+  "BackKey": "r",
+  "LogFormat": "json",
+  "MaxJobs": null,
+  "LogPath": null,
+  "StatePath": null,
+  "ConfigPath": null,
+  "LangPath": null,
+  "EncryptedExtensions": [".txt", ".docx", ".pdf"],
+  "CryptoMode": "Rapide", //Standard Rapide Premium
+  "CryptoKey": "TelAvivMaseltov",
+  "CryptoSoftPath": null
+}
