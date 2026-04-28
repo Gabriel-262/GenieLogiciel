@@ -43,25 +43,77 @@
                 </StackPanel>
             </Border>
 
-            <!-- Business software (Oscar) -->
+            <!-- Business software -->
             <Border Style="{StaticResource Card}" Margin="0,0,0,16">
                 <StackPanel>
                     <TextBlock Text="Business software monitor" FontWeight="SemiBold" Margin="0,0,0,6"/>
                     <TextBlock Style="{StaticResource Muted}"
                                Text="Backups are paused when this process is running."/>
-                    <!-- TODO (Oscar): lier à SettingsViewModel.BusinessSoftwareName (à ajouter). -->
-                    <TextBox Margin="0,8,0,0" IsEnabled="False" Text="(wired by Oscar)"/>
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="BusinessSoftwareBox" Grid.Column="0"
+                                 Text="{Binding BusinessSoftwareName, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Button Grid.Column="1" Content="Save" Margin="8,0,0,0"
+                                Style="{StaticResource PrimaryButton}"
+                                Command="{Binding ChangeBusinessSoftwareNameCommand}"
+                                CommandParameter="{Binding Text, ElementName=BusinessSoftwareBox}"/>
+                    </Grid>
                 </StackPanel>
             </Border>
 
-            <!-- Encryption (Bastien) -->
+            <!-- Encryption -->
             <Border Style="{StaticResource Card}" Margin="0,0,0,16">
                 <StackPanel>
                     <TextBlock Text="Encryption (CryptoSoft)" FontWeight="SemiBold" Margin="0,0,0,6"/>
                     <TextBlock Style="{StaticResource Muted}"
                                Text="File extensions encrypted after copy."/>
-                    <!-- TODO (Bastien): lier à SettingsViewModel.EncryptedExtensions + commandes AddExtension / RemoveExtension. -->
-                    <TextBox Margin="0,8,0,0" IsEnabled="False" Text="(wired by Bastien)"/>
+
+                    <TextBlock Text="Mode" Style="{StaticResource Muted}" Margin="0,12,0,4"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                        <TextBlock Text="{Binding CryptoMode}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <Button Content="Toggle (Rapide / Standard / Premium)"
+                                Command="{Binding ToggleCryptoModeCommand}"/>
+                    </StackPanel>
+
+                    <TextBlock Text="Extensions" Style="{StaticResource Muted}" Margin="0,0,0,4"/>
+                    <ItemsControl ItemsSource="{Binding EncryptedExtensions}" Margin="0,0,0,8">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Margin="0,0,6,6" Padding="8,4" CornerRadius="4"
+                                        Background="{DynamicResource SurfaceBrush}"
+                                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
+                                        <Button Content="x" Margin="6,0,0,0" Padding="4,0"
+                                                Command="{Binding DataContext.RemoveExtensionCommand,
+                                                                  RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"/>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="NewExtensionBox" Grid.Column="0"
+                                 Tag="e.g. .txt"/>
+                        <Button Grid.Column="1" Content="Add" Margin="8,0,0,0"
+                                Style="{StaticResource PrimaryButton}"
+                                Command="{Binding AddExtensionCommand}"
+                                CommandParameter="{Binding Text, ElementName=NewExtensionBox}"/>
+                    </Grid>
                 </StackPanel>
             </Border>
 

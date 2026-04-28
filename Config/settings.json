@@ -1,16 +1,22 @@
 {
   "AutoAssignJobId": false,
-  "Language": "fr",
+  "Language": "en",
   "BackKey": "r",
   "LogFormat": "json",
-  "MaxJobs": null,
+  "BusinessSoftwareName": "",
   "LogPath": null,
   "StatePath": null,
   "ConfigPath": null,
   "LangPath": null,
-  "EncryptedExtensions": [".txt", ".docx", ".pdf"],
+  "EncryptedExtensions": [
+    ".txt",
+    ".docx",
+    ".pdf"
+  ],
   "CryptoMode": "Rapide",
   "CryptoKey": "TelAvivMaseltov",
   "CryptoSoftPath": null,
+  "CryptoPublicKey": null,
+  "CryptoPrivateKey": null,
   "Theme": "dark"
 }
