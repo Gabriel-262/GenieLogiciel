@@ -29,8 +29,12 @@ public partial class App : Application
         repo.SetLogger(logger);
 
         // TODO (Oscar): instancier ProcessMonitorService (IBusinessSoftwareMonitor) et l'injecter dans BackupEngine.
-        // TODO (Bastien): instancier CryptoSoftService (ICryptoSoft) et l'injecter dans BackupEngine.
-        var engine = new BackupEngine(repo, logger);
+        var crypto = new CryptoDispatcher(
+            settingsService,
+            new XorCryptoService(settingsService),
+            new AesCryptoService(settingsService),
+            new EciesCryptoService(settingsService));
+        var engine = new BackupEngine(repo, logger, crypto: crypto, settings: settingsService);
 
         SettingsService = settingsService;
         MainViewModel = new MainViewModel(repo, engine, settingsService);
