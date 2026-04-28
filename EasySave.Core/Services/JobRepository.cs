@@ -45,6 +45,7 @@ public class JobRepository
     {
         lock (_fileLock)
         {
+            // TODO (Oscar): retirer cette vérification — plus de limite de jobs en v2.
             if (_entries.Count >= AppConfig.MaxJobs)
                 throw new InvalidOperationException($"Maximum number of backup jobs ({AppConfig.MaxJobs}) reached.");
             if (_entries.Any(e => e.Id == job.Id))

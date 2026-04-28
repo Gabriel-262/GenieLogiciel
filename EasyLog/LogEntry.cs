@@ -1,5 +1,6 @@
 namespace EasyLog;
 
+// TODO (Oscar): ajouter LogAction.BusinessSoftwareDetected pour tracer les pauses/blocages.
 public enum LogAction { Create, Update, Delete, JobUpdated, JobDeleted }
 
 public class LogEntry
@@ -11,4 +12,8 @@ public class LogEntry
     public string DestinationFilePath { get; set; } = string.Empty;
     public long FileSizeBytes { get; set; }
     public long TransferTimeMs { get; set; }
+
+    // TODO (Bastien): ajouter
+    //   public long CryptoTimeMs { get; set; }
+    // et sérialiser ce champ dans JsonLineLogger + XmlAppendLogger.
 }
