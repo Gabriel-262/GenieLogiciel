@@ -17,7 +17,7 @@ public partial class SettingsViewModel : ObservableObject
         language = settings.Current.Language;
         backKey = settings.Current.BackKey;
         logFormat = (settings.Current.LogFormat ?? "json").ToLowerInvariant();
-        maxJobs = settings.Current.MaxJobs ?? AppConfig.MaxJobs;
+        businessSoftwareName = settings.Current.BusinessSoftwareName;
         logPath = settings.Current.LogPath ?? string.Empty;
         statePath = settings.Current.StatePath ?? string.Empty;
         configPath = settings.Current.ConfigPath ?? string.Empty;
@@ -34,7 +34,7 @@ public partial class SettingsViewModel : ObservableObject
 
     [ObservableProperty] private string backKey;
     [ObservableProperty] private string logFormat;
-    [ObservableProperty] private int maxJobs;
+    [ObservableProperty] private string businessSoftwareName;
     [ObservableProperty] private string logPath;
     [ObservableProperty] private string statePath;
     [ObservableProperty] private string configPath;
@@ -84,16 +84,14 @@ public partial class SettingsViewModel : ObservableObject
         AppConfig.Settings = _settings.Current;
     }
 
-    [RelayCommand(CanExecute = nameof(CanChangeMaxJobs))]
-    private void ChangeMaxJobs(int value)
+    [RelayCommand]
+    private void ChangeBusinessSoftwareName(string name)
     {
-        MaxJobs = value;
-        _settings.Current.MaxJobs = value;
+        BusinessSoftwareName = name?.Trim() ?? string.Empty;
+        _settings.Current.BusinessSoftwareName = BusinessSoftwareName;
         _settings.Save();
         AppConfig.Settings = _settings.Current;
     }
-
-    private bool CanChangeMaxJobs(int value) => value > 0;
 
     [RelayCommand]
     private void ChangeLogPath(string path)    { LogPath = path;    _settings.Current.LogPath = Nullable(path);    _settings.Save(); AppConfig.Settings = _settings.Current; }

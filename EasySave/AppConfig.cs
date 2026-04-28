@@ -7,8 +7,6 @@ public enum LogFormat { Json, Xml }
 public static class AppConfig
 {
     public const string DefaultLanguage = "en";
-    private const int FallbackMaxJobs = 5;
-
     private static Dictionary<string, string>? _cachedEnv;
     private static string? _cachedBaseDirectory;
 
@@ -34,15 +32,6 @@ public static class AppConfig
 
             _cachedBaseDirectory = appBase;
             return _cachedBaseDirectory;
-        }
-    }
-
-    public static int MaxJobs
-    {
-        get
-        {
-            if (Settings?.MaxJobs is int v && v > 0) return v;
-            return int.TryParse(Env("MAX_JOBS"), out int e) && e > 0 ? e : FallbackMaxJobs;
         }
     }
 

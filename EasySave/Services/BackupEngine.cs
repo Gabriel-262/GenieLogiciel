@@ -9,16 +9,21 @@ public class BackupEngine
 {
     private readonly JobRepository _repo;
     private readonly ILogger _logger;
-    private readonly ICryptoSoft? _crypto;
-    private readonly SettingsService? _settings;
+        private readonly IBusinessSoftwareMonitor? _businessMonitor;
+        private readonly ICryptoSoft? _crypto;
+        private readonly SettingsService? _settings;
 
-    public BackupEngine(JobRepository repo, ILogger logger,
-        ICryptoSoft? crypto = null, SettingsService? settings = null)
-    {
-        _repo = repo;
-        _logger = logger;
-        _crypto = crypto;
-        _settings = settings;
+        public BackupEngine(JobRepository repo, ILogger logger,
+            IBusinessSoftwareMonitor? businessMonitor = null,
+            ICryptoSoft? crypto = null,
+            SettingsService? settings = null)
+        {
+            _repo = repo;
+            _logger = logger;
+            _businessMonitor = businessMonitor;
+            _crypto = crypto;
+            _settings = settings;
+        }
     }
 
     public event EventHandler<BackupProgressEventArgs>? ProgressChanged;
@@ -38,6 +43,13 @@ public class BackupEngine
     public void ExecuteJob(BackupJob job)
     {
         if (!Directory.Exists(job.SourcePath)) return;
+
+        if (_businessMonitor?.IsRunning() == true)
+        {
+            LogBusinessSoftwareDetected(job);
+            return;
+        }
+
         Directory.CreateDirectory(job.TargetPath);
 
         JobStarted?.Invoke(this, job.Name);
@@ -100,12 +112,34 @@ public class BackupEngine
             processed++;
             bytesDone += sourceFile.Length;
             PushProgress(job, sourceFile.FullName, destination, processed, totalFiles, bytesDone, totalSize);
+
+            if (_businessMonitor?.IsRunning() == true)
+            {
+                LogBusinessSoftwareDetected(job);
+                _repo.ClearState(job.Id);
+                JobCompleted?.Invoke(this, job.Name);
+                return;
+            }
         }
 
         RemoveOrphans(job, files);
 
         _repo.ClearState(job.Id);
         JobCompleted?.Invoke(this, job.Name);
+    }
+
+    private void LogBusinessSoftwareDetected(BackupJob job)
+    {
+        _logger.Log(new LogEntry
+        {
+            Timestamp = DateTime.Now,
+            BackupName = job.Name,
+            Action = LogAction.BusinessSoftwareDetected,
+            SourceFilePath = job.SourcePath,
+            DestinationFilePath = job.TargetPath,
+            FileSizeBytes = 0,
+            TransferTimeMs = 0
+        });
     }
 
     private void RemoveOrphans(BackupJob job, List<FileInfo> sourceFiles)
