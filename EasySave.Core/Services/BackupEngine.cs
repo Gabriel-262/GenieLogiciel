@@ -9,11 +9,20 @@ public class BackupEngine
 {
     private readonly JobRepository _repo;
     private readonly ILogger _logger;
+    private readonly IBusinessSoftwareMonitor? _businessMonitor;
+    private readonly ICryptoSoft? _crypto;
+    private readonly SettingsService? _settings;
 
-    public BackupEngine(JobRepository repo, ILogger logger)
+    public BackupEngine(JobRepository repo, ILogger logger,
+        IBusinessSoftwareMonitor? businessMonitor = null,
+        ICryptoSoft? crypto = null,
+        SettingsService? settings = null)
     {
         _repo = repo;
         _logger = logger;
+        _businessMonitor = businessMonitor;
+        _crypto = crypto;
+        _settings = settings;
     }
 
     public event EventHandler<BackupProgressEventArgs>? ProgressChanged;
@@ -30,10 +39,38 @@ public class BackupEngine
         }
     }
 
+    public Task ExecuteJobsAsync(IEnumerable<int> jobIds, CancellationToken ct = default)
+    {
+        var ids = jobIds.ToList();
+        return Task.Run(() =>
+        {
+            foreach (int id in ids)
+            {
+                if (ct.IsCancellationRequested) break;
+                var job = _repo.GetJobById(id);
+                if (job is null) continue;
+                ExecuteJob(job);
+            }
+        }, ct);
+    }
+
+    public Task ExecuteJobAsync(BackupJob job, CancellationToken ct = default)
+        => Task.Run(() => ExecuteJob(job), ct);
+
     public void ExecuteJob(BackupJob job)
     {
         if (!Directory.Exists(job.SourcePath)) return;
+
+        if (_businessMonitor?.IsRunning() == true)
+        {
+            LogBusinessSoftwareDetected(job);
+            return;
+        }
+
         Directory.CreateDirectory(job.TargetPath);
+
+        // TODO (Oscar): avant de démarrer le job, vérifier IBusinessSoftwareMonitor.IsRunning().
+        // Si détecté, logger (LogAction.BusinessSoftwareDetected ou champ dédié) et sortir sans exécuter.
 
         JobStarted?.Invoke(this, job.Name);
 
@@ -74,6 +111,12 @@ public class BackupEngine
             bool existedBefore = File.Exists(destination);
             long elapsedMs = CopyFile(sourceFile.FullName, destination);
 
+            long cryptoMs = 0;
+            if (_crypto is not null && elapsedMs >= 0 && ShouldEncrypt(sourceFile.FullName))
+            {
+                cryptoMs = _crypto.Encrypt(destination);
+            }
+
             _logger.Log(new LogEntry
             {
                 Timestamp = DateTime.Now,
@@ -82,18 +125,41 @@ public class BackupEngine
                 SourceFilePath = sourceFile.FullName,
                 DestinationFilePath = destination,
                 FileSizeBytes = sourceFile.Length,
-                TransferTimeMs = elapsedMs
+                TransferTimeMs = elapsedMs,
+                CryptoTimeMs = cryptoMs
             });
 
             processed++;
             bytesDone += sourceFile.Length;
             PushProgress(job, sourceFile.FullName, destination, processed, totalFiles, bytesDone, totalSize);
+
+            if (_businessMonitor?.IsRunning() == true)
+            {
+                LogBusinessSoftwareDetected(job);
+                _repo.ClearState(job.Id);
+                JobCompleted?.Invoke(this, job.Name);
+                return;
+            }
         }
 
         RemoveOrphans(job, files);
 
         _repo.ClearState(job.Id);
         JobCompleted?.Invoke(this, job.Name);
+    }
+
+    private void LogBusinessSoftwareDetected(BackupJob job)
+    {
+        _logger.Log(new LogEntry
+        {
+            Timestamp = DateTime.Now,
+            BackupName = job.Name,
+            Action = LogAction.BusinessSoftwareDetected,
+            SourceFilePath = job.SourcePath,
+            DestinationFilePath = job.TargetPath,
+            FileSizeBytes = 0,
+            TransferTimeMs = 0
+        });
     }
 
     private void RemoveOrphans(BackupJob job, List<FileInfo> sourceFiles)
@@ -152,6 +218,25 @@ public class BackupEngine
             BytesDone = bytesDone,
             ProgressPercent = percent
         });
+    }
+
+    private bool ShouldEncrypt(string sourceFilePath)
+    {
+        var extensions = _settings?.Current.EncryptedExtensions;
+        if (extensions is null || extensions.Count == 0) return false;
+
+        string ext = Path.GetExtension(sourceFilePath);
+        if (string.IsNullOrEmpty(ext)) return false;
+
+        return extensions.Any(e => string.Equals(
+            NormalizeExtension(e), ext, StringComparison.OrdinalIgnoreCase));
+    }
+
+    internal static string NormalizeExtension(string ext)
+    {
+        ext = ext.Trim().ToLowerInvariant();
+        if (ext.Length == 0) return ext;
+        return ext.StartsWith('.') ? ext : "." + ext;
     }
 
     private static List<FileInfo> ScanDirectory(string root)

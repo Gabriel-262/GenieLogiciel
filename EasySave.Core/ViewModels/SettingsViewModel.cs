@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using EasySave.Resources;
@@ -15,11 +16,13 @@ public partial class SettingsViewModel : ObservableObject
         language = settings.Current.Language;
         backKey = settings.Current.BackKey;
         logFormat = (settings.Current.LogFormat ?? "json").ToLowerInvariant();
-        maxJobs = settings.Current.MaxJobs ?? AppConfig.MaxJobs;
+        businessSoftwareName = settings.Current.BusinessSoftwareName;
         logPath = settings.Current.LogPath ?? string.Empty;
         statePath = settings.Current.StatePath ?? string.Empty;
         configPath = settings.Current.ConfigPath ?? string.Empty;
         langPath = settings.Current.LangPath ?? string.Empty;
+        cryptoMode = string.IsNullOrEmpty(settings.Current.CryptoMode) ? "Rapide" : settings.Current.CryptoMode;
+        EncryptedExtensions = new ObservableCollection<string>(settings.Current.EncryptedExtensions);
     }
 
     [ObservableProperty]
@@ -28,11 +31,14 @@ public partial class SettingsViewModel : ObservableObject
 
     [ObservableProperty] private string backKey;
     [ObservableProperty] private string logFormat;
-    [ObservableProperty] private int maxJobs;
+    [ObservableProperty] private string businessSoftwareName;
     [ObservableProperty] private string logPath;
     [ObservableProperty] private string statePath;
     [ObservableProperty] private string configPath;
     [ObservableProperty] private string langPath;
+    [ObservableProperty] private string cryptoMode;
+
+    public ObservableCollection<string> EncryptedExtensions { get; }
 
     public string LanguageDisplayName => LanguageLabel(Language);
 
@@ -67,16 +73,14 @@ public partial class SettingsViewModel : ObservableObject
         AppConfig.Settings = _settings.Current;
     }
 
-    [RelayCommand(CanExecute = nameof(CanChangeMaxJobs))]
-    private void ChangeMaxJobs(int value)
+    [RelayCommand]
+    private void ChangeBusinessSoftwareName(string name)
     {
-        MaxJobs = value;
-        _settings.Current.MaxJobs = value;
+        BusinessSoftwareName = name?.Trim() ?? string.Empty;
+        _settings.Current.BusinessSoftwareName = BusinessSoftwareName;
         _settings.Save();
         AppConfig.Settings = _settings.Current;
     }
-
-    private bool CanChangeMaxJobs(int value) => value > 0;
 
     [RelayCommand]
     private void ChangeLogPath(string path)    { LogPath = path;    _settings.Current.LogPath = Nullable(path);    _settings.Save(); AppConfig.Settings = _settings.Current; }
@@ -86,6 +90,53 @@ public partial class SettingsViewModel : ObservableObject
     private void ChangeConfigPath(string path) { ConfigPath = path; _settings.Current.ConfigPath = Nullable(path); _settings.Save(); AppConfig.Settings = _settings.Current; }
     [RelayCommand]
     private void ChangeLangPath(string path)   { LangPath = path;   _settings.Current.LangPath = Nullable(path);   _settings.Save(); AppConfig.Settings = _settings.Current; }
+
+    [RelayCommand]
+    private void ToggleCryptoMode()
+    {
+        CryptoMode = CryptoMode switch
+        {
+            "Rapide"   => "Standard",
+            "Standard" => "Premium",
+            _          => "Rapide"
+        };
+        _settings.Current.CryptoMode = CryptoMode;
+        _settings.Save();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanAddExtension))]
+    private void AddExtension(string extension)
+    {
+        string normalized = NormalizeExtension(extension);
+        if (string.IsNullOrEmpty(normalized)) return;
+        if (EncryptedExtensions.Any(e => string.Equals(e, normalized, StringComparison.OrdinalIgnoreCase))) return;
+
+        EncryptedExtensions.Add(normalized);
+        _settings.Current.EncryptedExtensions = EncryptedExtensions.ToList();
+        _settings.Save();
+    }
+
+    private bool CanAddExtension(string? extension) => !string.IsNullOrWhiteSpace(extension);
+
+    [RelayCommand]
+    private void RemoveExtension(string extension)
+    {
+        string normalized = NormalizeExtension(extension);
+        var match = EncryptedExtensions.FirstOrDefault(e =>
+            string.Equals(e, normalized, StringComparison.OrdinalIgnoreCase));
+        if (match is null) return;
+
+        EncryptedExtensions.Remove(match);
+        _settings.Current.EncryptedExtensions = EncryptedExtensions.ToList();
+        _settings.Save();
+    }
+
+    private static string NormalizeExtension(string ext)
+    {
+        if (string.IsNullOrWhiteSpace(ext)) return string.Empty;
+        ext = ext.Trim().ToLowerInvariant();
+        return ext.StartsWith('.') ? ext : "." + ext;
+    }
 
     private static string? Nullable(string s) => string.IsNullOrWhiteSpace(s) ? null : s;
 

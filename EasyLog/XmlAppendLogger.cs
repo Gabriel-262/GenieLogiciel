@@ -38,6 +38,7 @@ public class XmlAppendLogger : ILogger
             writer.WriteElementString("DestinationFilePath", entry.DestinationFilePath);
             writer.WriteElementString("FileSizeBytes", entry.FileSizeBytes.ToString(CultureInfo.InvariantCulture));
             writer.WriteElementString("TransferTimeMs", entry.TransferTimeMs.ToString(CultureInfo.InvariantCulture));
+            writer.WriteElementString("CryptoTimeMs", entry.CryptoTimeMs.ToString(CultureInfo.InvariantCulture));
             writer.WriteEndElement();
         }
 

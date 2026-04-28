@@ -18,7 +18,12 @@ Translator.SetLanguage(settingsService.Current.Language);
 var repo   = new JobRepository(pathService);
 ILogger logger = LoggerFactory.Create(AppConfig.LogFormat, pathService.GetLogDirectory);
 repo.SetLogger(logger);
-var engine = new BackupEngine(repo, logger);
+var crypto = new CryptoDispatcher(
+    settingsService,
+    new XorCryptoService(settingsService),
+    new AesCryptoService(settingsService),
+    new EciesCryptoService(settingsService));
+var engine = new BackupEngine(repo, logger, crypto: crypto, settings: settingsService);
 
 if (args.Length > 0)
 {

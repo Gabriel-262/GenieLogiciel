@@ -220,7 +220,6 @@ public class ConsoleMenu
             Console.WriteLine($"{Translator.Get("Settings_BackKey")}: [{_vm.Settings.BackKey}]");
             Console.WriteLine($"{Translator.Get("Settings_LogFormat")}: [{_vm.Settings.LogFormat.ToUpperInvariant()}]");
             Console.WriteLine($"{Translator.Get("Settings_Paths")}");
-            Console.WriteLine($"{Translator.Get("Settings_MaxJobs")}: [{_vm.Settings.MaxJobs}]");
             Console.WriteLine(Translator.Get("Settings_Back"));
             Console.WriteLine();
             Console.Write(Translator.Get("Prompt_Choice"));
@@ -234,8 +233,7 @@ public class ConsoleMenu
                 case "2": ChangeBackKey();                                   break;
                 case "3": _vm.Settings.ToggleLogFormatCommand.Execute(null); break;
                 case "4": PathsMenu();                                       break;
-                case "5": ChangeMaxJobs();                                   break;
-                case "6": return;
+                case "5": return;
                 default:
                     Console.WriteLine(Translator.Get("Error_InvalidChoice"));
                     Wait();
@@ -290,27 +288,6 @@ public class ConsoleMenu
 
     private static string Display(string? path) =>
         string.IsNullOrWhiteSpace(path) ? "(default)" : path;
-
-    private void ChangeMaxJobs()
-    {
-        Console.Clear();
-        Console.WriteLine(BackHint());
-        Console.WriteLine();
-        Console.Write(Translator.Get("Prompt_NewMaxJobs"));
-
-        string? input = Console.ReadLine()?.Trim();
-        if (IsBack(input)) return;
-
-        if (!int.TryParse(input, out int value) || value <= 0)
-        {
-            Console.WriteLine(Translator.Get("Error_InvalidChoice"));
-            Wait();
-            return;
-        }
-
-        _vm.Settings.ChangeMaxJobsCommand.Execute(value);
-        Wait();
-    }
 
     private void ChangeLanguage()
     {
