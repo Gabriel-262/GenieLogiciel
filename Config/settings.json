@@ -3,6 +3,7 @@
   "Language": "en",
   "BackKey": "r",
   "LogFormat": "json",
+  "MaxJobs": null,
   "BusinessSoftwareName": "",
   "LogPath": null,
   "StatePath": null,

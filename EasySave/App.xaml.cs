@@ -23,9 +23,7 @@ public partial class App : Application
         Translator.SetLanguage(settingsService.Current.Language);
 
         var repo   = new JobRepository(pathService);
-        ILogger logger = AppConfig.LogFormat == LogFormat.Xml
-            ? new XmlAppendLogger(pathService.GetDailyLogFilePath)
-            : new JsonLineLogger(pathService.GetDailyLogFilePath);
+        ILogger logger = LoggerFactory.Create(AppConfig.LogFormat, pathService.GetLogDirectory);
         repo.SetLogger(logger);
 
         // TODO (Oscar): instancier ProcessMonitorService (IBusinessSoftwareMonitor) et l'injecter dans BackupEngine.

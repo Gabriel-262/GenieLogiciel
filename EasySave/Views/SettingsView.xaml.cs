@@ -14,12 +14,6 @@ public partial class SettingsView : UserControl
 
     private SettingsViewModel Vm => (SettingsViewModel)DataContext;
 
-    private void AutoAssign_Click(object sender, RoutedEventArgs e)
-    {
-        // The checkbox already flipped the binding; sync to storage.
-        Vm.ToggleAutoIdCommand.Execute(null);
-    }
-
     private void Lang_Click(object sender, RoutedEventArgs e)
     {
         if (sender is Button b && b.Tag is string code)

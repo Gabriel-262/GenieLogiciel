@@ -10,10 +10,6 @@
                 <StackPanel>
                     <TextBlock Text="General" FontWeight="SemiBold" Margin="0,0,0,12"/>
 
-                    <CheckBox Content="Auto-assign Job ID"
-                              IsChecked="{Binding AutoAssignJobId}"
-                              Click="AutoAssign_Click" Margin="0,0,0,12"/>
-
                     <TextBlock Text="Language" Style="{StaticResource Muted}"/>
                     <StackPanel Orientation="Horizontal" Margin="0,4,0,12">
                         <Button Content="English"  Click="Lang_Click" Tag="en"/>

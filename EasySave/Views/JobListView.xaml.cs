@@ -15,10 +15,14 @@ public partial class JobListView : UserControl
 
     private void Add_Click(object sender, RoutedEventArgs e)
     {
-        int id = Vm.Settings.AutoAssignJobId
-            ? Vm.JobList.GetNextAvailableId()
-            : Vm.JobList.GetNextAvailableId();
-        Vm.JobForm.LoadForCreate(id);
+        if (Vm.JobList.IsFull)
+        {
+            MessageBox.Show(
+                $"Maximum number of backup jobs ({AppConfig.MaxJobs}) reached.",
+                "Cannot add job", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        Vm.JobForm.LoadForCreate();
         new JobFormWindow { DataContext = Vm.JobForm, Owner = Window.GetWindow(this) }.ShowDialog();
         Vm.JobList.Refresh();
     }
