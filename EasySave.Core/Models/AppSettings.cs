@@ -25,4 +25,7 @@ public class AppSettings
     // première utilisation si absente. Privée stockée pour pouvoir déchiffrer.
     public string? CryptoPublicKey { get; set; }
     public string? CryptoPrivateKey { get; set; }
+
+    // v2 (WPF): "light" or "dark". Ignored by the CLI.
+    public string Theme { get; set; } = "light";
 }

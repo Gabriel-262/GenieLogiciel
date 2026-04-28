@@ -351,13 +351,13 @@ public class ConsoleMenu
     {
         while (true)
         {
-            Console.Write(Translator.Get("Prompt_JobIdNew"));
+            Console.Write(Translator.Get("Prompt_JobIdNewUnlimited"));
             string? input = Console.ReadLine()?.Trim();
             if (IsBack(input)) return null;
 
             if (!int.TryParse(input, out int id) || id < 1)
             {
-                Console.WriteLine(Translator.Get("Error_InvalidId"));
+                Console.WriteLine(Translator.Get("Error_InvalidIdUnlimited"));
                 continue;
             }
             if (_vm.JobList.IdExists(id))

@@ -1,5 +1,5 @@
 {
-  "Menu_Title": "=== EasySave v1.0 ===",
+  "Menu_Title": "=== EasySave v2.0 (CLI) ===",
   "Menu_ListJobs": "1. 列出备份任务",
   "Menu_AddJob": "2. 添加备份任务",
   "Menu_EditJob": "3. 编辑备份任务",

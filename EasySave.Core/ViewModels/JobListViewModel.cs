@@ -50,22 +50,22 @@ public partial class JobListViewModel : ObservableObject
     }
 
     [RelayCommand]
-    public void ExecuteJob(int id)
+    public Task ExecuteJobAsync(int id)
     {
         var job = _repo.GetJobById(id);
-        if (job is null) return;
-        _engine.ExecuteJob(job);
+        if (job is null) return Task.CompletedTask;
+        return _engine.ExecuteJobAsync(job);
     }
 
     [RelayCommand]
-    public void ExecuteAll()
+    public Task ExecuteAllAsync()
     {
-        _engine.ExecuteJobs(_repo.GetAllJobs().Select(j => j.Id));
+        return _engine.ExecuteJobsAsync(_repo.GetAllJobs().Select(j => j.Id));
     }
 
     [RelayCommand]
-    public void ExecuteMany(IEnumerable<int> ids)
+    public Task ExecuteManyAsync(IEnumerable<int> ids)
     {
-        _engine.ExecuteJobs(ids);
+        return _engine.ExecuteJobsAsync(ids);
     }
 }

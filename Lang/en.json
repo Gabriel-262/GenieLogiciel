@@ -1,5 +1,7 @@
 {
-  "Menu_Title": "=== EasySave v1.0 ===",
+  "Menu_Title": "=== EasySave v2.0 (CLI) ===",
+  "Prompt_JobIdNewUnlimited": "Job ID (positive integer): ",
+  "Error_InvalidIdUnlimited": "Invalid ID. Enter a positive integer.",
   "Menu_ListJobs": "1. List backup jobs",
   "Menu_AddJob": "2. Add a backup job",
   "Menu_EditJob": "3. Edit a backup job",

@@ -1,15 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>EasySave</RootNamespace>
-    <AssemblyName>EasySave</AssemblyName>
+    <AssemblyName>EasySave.Cli</AssemblyName>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
-    <UseWPF>true</UseWPF>
-    <ApplicationIcon></ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>

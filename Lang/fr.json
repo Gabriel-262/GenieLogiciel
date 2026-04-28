@@ -1,5 +1,7 @@
 {
-  "Menu_Title": "=== EasySave v1.0 ===",
+  "Menu_Title": "=== EasySave v2.0 (CLI) ===",
+  "Prompt_JobIdNewUnlimited": "ID du travail (entier positif) : ",
+  "Error_InvalidIdUnlimited": "ID invalide. Entrez un entier positif.",
   "Menu_ListJobs": "1. Lister les travaux de sauvegarde",
   "Menu_AddJob": "2. Ajouter un travail de sauvegarde",
   "Menu_EditJob": "3. Modifier un travail de sauvegarde",

@@ -39,6 +39,24 @@ public class BackupEngine
         }
     }
 
+    public Task ExecuteJobsAsync(IEnumerable<int> jobIds, CancellationToken ct = default)
+    {
+        var ids = jobIds.ToList();
+        return Task.Run(() =>
+        {
+            foreach (int id in ids)
+            {
+                if (ct.IsCancellationRequested) break;
+                var job = _repo.GetJobById(id);
+                if (job is null) continue;
+                ExecuteJob(job);
+            }
+        }, ct);
+    }
+
+    public Task ExecuteJobAsync(BackupJob job, CancellationToken ct = default)
+        => Task.Run(() => ExecuteJob(job), ct);
+
     public void ExecuteJob(BackupJob job)
     {
         if (!Directory.Exists(job.SourcePath)) return;
@@ -50,6 +68,9 @@ public class BackupEngine
         }
 
         Directory.CreateDirectory(job.TargetPath);
+
+        // TODO (Oscar): avant de démarrer le job, vérifier IBusinessSoftwareMonitor.IsRunning().
+        // Si détecté, logger (LogAction.BusinessSoftwareDetected ou champ dédié) et sortir sans exécuter.
 
         JobStarted?.Invoke(this, job.Name);
 
