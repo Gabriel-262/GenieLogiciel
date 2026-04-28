@@ -25,7 +25,7 @@ var crypto = new CryptoDispatcher(
     new XorCryptoService(settingsService),
     new AesCryptoService(settingsService),
     new EciesCryptoService(settingsService));
-var engine = new BackupEngine(repo, logger, crypto, settingsService);
+var engine = new BackupEngine(repo, logger, crypto: crypto, settings: settingsService);
 
 if (args.Length > 0)
 {

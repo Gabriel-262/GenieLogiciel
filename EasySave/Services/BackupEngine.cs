@@ -9,21 +9,20 @@ public class BackupEngine
 {
     private readonly JobRepository _repo;
     private readonly ILogger _logger;
-        private readonly IBusinessSoftwareMonitor? _businessMonitor;
-        private readonly ICryptoSoft? _crypto;
-        private readonly SettingsService? _settings;
+    private readonly IBusinessSoftwareMonitor? _businessMonitor;
+    private readonly ICryptoSoft? _crypto;
+    private readonly SettingsService? _settings;
 
-        public BackupEngine(JobRepository repo, ILogger logger,
-            IBusinessSoftwareMonitor? businessMonitor = null,
-            ICryptoSoft? crypto = null,
-            SettingsService? settings = null)
-        {
-            _repo = repo;
-            _logger = logger;
-            _businessMonitor = businessMonitor;
-            _crypto = crypto;
-            _settings = settings;
-        }
+    public BackupEngine(JobRepository repo, ILogger logger,
+        IBusinessSoftwareMonitor? businessMonitor = null,
+        ICryptoSoft? crypto = null,
+        SettingsService? settings = null)
+    {
+        _repo = repo;
+        _logger = logger;
+        _businessMonitor = businessMonitor;
+        _crypto = crypto;
+        _settings = settings;
     }
 
     public event EventHandler<BackupProgressEventArgs>? ProgressChanged;
