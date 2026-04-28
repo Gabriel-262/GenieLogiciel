@@ -6,6 +6,7 @@ public class AppSettings
     public string Language { get; set; } = "en";
     public string BackKey { get; set; } = "r";
     public string? LogFormat { get; set; }
+    public string BusinessSoftwareName { get; set; } = string.Empty;
 
     public string? LogPath { get; set; }
     public string? StatePath { get; set; }

@@ -16,6 +16,7 @@ public partial class SettingsViewModel : ObservableObject
         language = settings.Current.Language;
         backKey = settings.Current.BackKey;
         logFormat = (settings.Current.LogFormat ?? "json").ToLowerInvariant();
+        businessSoftwareName = settings.Current.BusinessSoftwareName;
         logPath = settings.Current.LogPath ?? string.Empty;
         statePath = settings.Current.StatePath ?? string.Empty;
         configPath = settings.Current.ConfigPath ?? string.Empty;
@@ -30,6 +31,7 @@ public partial class SettingsViewModel : ObservableObject
 
     [ObservableProperty] private string backKey;
     [ObservableProperty] private string logFormat;
+    [ObservableProperty] private string businessSoftwareName;
     [ObservableProperty] private string logPath;
     [ObservableProperty] private string statePath;
     [ObservableProperty] private string configPath;
@@ -72,6 +74,15 @@ public partial class SettingsViewModel : ObservableObject
     {
         LogFormat = LogFormat == "xml" ? "json" : "xml";
         _settings.Current.LogFormat = LogFormat;
+        _settings.Save();
+        AppConfig.Settings = _settings.Current;
+    }
+
+    [RelayCommand]
+    private void ChangeBusinessSoftwareName(string name)
+    {
+        BusinessSoftwareName = name?.Trim() ?? string.Empty;
+        _settings.Current.BusinessSoftwareName = BusinessSoftwareName;
         _settings.Save();
         AppConfig.Settings = _settings.Current;
     }
