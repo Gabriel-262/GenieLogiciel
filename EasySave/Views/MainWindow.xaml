@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:EasySave.Views"
         Title="{DynamicResource UI_Window_Main_Title}"
+        Icon="/Icone.ico"
         Width="1100" Height="700"
         MinWidth="800" MinHeight="520"
         Style="{StaticResource AppWindow}"
