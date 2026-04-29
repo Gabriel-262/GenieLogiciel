@@ -3,5 +3,6 @@ namespace EasySave.Models;
 public enum JobStatus
 {
     Inactive,
-    Active
+    Active,
+    Paused
 }

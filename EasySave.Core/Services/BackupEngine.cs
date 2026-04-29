@@ -13,6 +13,11 @@ public class BackupEngine
     private readonly ICryptoSoft? _crypto;
     private readonly SettingsService? _settings;
 
+    // Signal de reprise. Initial: set (true) = pas de pause.
+    // Quand le logiciel métier est détecté → Reset() (signal éteint) → le
+    // thread d'exécution se bloque sur Wait() jusqu'à appel à Resume().
+    private readonly ManualResetEventSlim _resumeSignal = new(initialState: true);
+
     public BackupEngine(JobRepository repo, ILogger logger,
         IBusinessSoftwareMonitor? businessMonitor = null,
         ICryptoSoft? crypto = null,
@@ -28,6 +33,20 @@ public class BackupEngine
     public event EventHandler<BackupProgressEventArgs>? ProgressChanged;
     public event EventHandler<string>? JobStarted;
     public event EventHandler<string>? JobCompleted;
+    // Levé chaque fois qu'un job entre en pause à cause du logiciel métier.
+    public event EventHandler<string>? JobPaused;
+    // Levé quand l'utilisateur clique sur Reprendre.
+    public event EventHandler<string>? JobResumed;
+
+    // True si au moins un job est actuellement en pause (signal Reset).
+    public bool IsPaused => !_resumeSignal.IsSet;
+
+    // Réveille le thread d'exécution bloqué dans WaitForResume().
+    // Appelé par le bouton "Reprendre" du ViewModel.
+    public void Resume()
+    {
+        _resumeSignal.Set();
+    }
 
     public void ExecuteJobs(IEnumerable<int> jobIds)
     {
@@ -61,16 +80,11 @@ public class BackupEngine
     {
         if (!Directory.Exists(job.SourcePath)) return;
 
-        if (_businessMonitor?.IsRunning() == true)
-        {
-            LogBusinessSoftwareDetected(job);
-            return;
-        }
+        // Check pré-job : si le logiciel métier tourne déjà au moment du clic
+        // sur "Exécuter", on pause immédiatement (avant même JobStarted).
+        WaitWhileBusinessSoftwareRunning(job);
 
         Directory.CreateDirectory(job.TargetPath);
-
-        // TODO (Oscar): avant de démarrer le job, vérifier IBusinessSoftwareMonitor.IsRunning().
-        // Si détecté, logger (LogAction.BusinessSoftwareDetected ou champ dédié) et sortir sans exécuter.
 
         JobStarted?.Invoke(this, job.Name);
 
@@ -94,6 +108,25 @@ public class BackupEngine
 
         foreach (var sourceFile in files)
         {
+            // CHECK 1 : logiciel métier global (configuré dans Paramètres).
+            WaitWhileBusinessSoftwareRunning(job);
+
+            // CHECK 2 : fichier source verrouillé par une autre application
+            // (ex. .docx ouvert dans Word). On bloque AVANT la copie : si on
+            // attendait la copie, File.Copy passerait silencieusement sur les
+            // fichiers en partage-lecture. Ici on force un test exclusif.
+            WaitWhileFileLocked(sourceFile, job);
+
+            // Le fichier peut avoir disparu pendant la pause (cas typique :
+            // Word a supprimé son lock file ~$xxx.docx en se fermant).
+            sourceFile.Refresh();
+            if (!sourceFile.Exists)
+            {
+                processed++;
+                PushProgress(job, sourceFile.FullName, string.Empty, processed, totalFiles, bytesDone, totalSize);
+                continue;
+            }
+
             string relative = Path.GetRelativePath(job.SourcePath, sourceFile.FullName);
             string destination = Path.Combine(job.TargetPath, relative);
 
@@ -133,14 +166,6 @@ public class BackupEngine
             processed++;
             bytesDone += sourceFile.Length;
             PushProgress(job, sourceFile.FullName, destination, processed, totalFiles, bytesDone, totalSize);
-
-            if (_businessMonitor?.IsRunning() == true)
-            {
-                LogBusinessSoftwareDetected(job);
-                _repo.ClearState(job.Id);
-                JobCompleted?.Invoke(this, job.Name);
-                return;
-            }
         }
 
         RemoveOrphans(job, files);
@@ -149,11 +174,145 @@ public class BackupEngine
         JobCompleted?.Invoke(this, job.Name);
     }
 
+    // ------------------------------------------------------------------------
+    // WaitWhileBusinessSoftwareRunning : si le logiciel métier tourne,
+    // marque le job comme Paused, log l'événement, fire JobPaused, puis
+    // BLOQUE le thread sur _resumeSignal jusqu'à ce que :
+    //   - l'utilisateur clique sur Reprendre (Resume() set le signal),
+    //   - ET que le logiciel métier soit redevenu inactif.
+    // Au réveil, on revérifie. Si le logiciel tourne toujours → on repause.
+    // ------------------------------------------------------------------------
+    private void WaitWhileBusinessSoftwareRunning(BackupJob job)
+    {
+        if (_businessMonitor is null) return;
+
+        bool wasPaused = false;
+
+        while (_businessMonitor.IsRunning())
+        {
+            if (!wasPaused)
+            {
+                // Première détection → on bascule en pause.
+                wasPaused = true;
+                _resumeSignal.Reset();   // signal éteint → futur Wait() bloquant
+
+                _repo.UpdateState(job.Id, e =>
+                {
+                    e.Status = JobStatus.Paused;
+                    e.LastActionTime = DateTime.Now;
+                });
+
+                LogBusinessSoftwareDetected(job);
+                JobPaused?.Invoke(this, job.Name);
+            }
+
+            // Bloque le thread jusqu'à appel à Resume(). Pas de busy-loop CPU.
+            _resumeSignal.Wait();
+
+            // Au réveil, on retombe en haut du while pour re-vérifier IsRunning().
+            // → si le logiciel tourne toujours, on repause (boucle).
+            // → sinon, on sort du while et on continue le job.
+        }
+
+        if (wasPaused)
+        {
+            // Sortie de pause confirmée → on remet l'état Active.
+            _repo.UpdateState(job.Id, e =>
+            {
+                e.Status = JobStatus.Active;
+                e.LastActionTime = DateTime.Now;
+            });
+            JobResumed?.Invoke(this, job.Name);
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    // WaitWhileFileLocked : si un autre process tient le fichier source
+    // (ex. Word ouvre le .docx → verrou de partage), on pause le job ici
+    // jusqu'à ce que l'utilisateur ferme le fichier ET clique Reprendre.
+    // ------------------------------------------------------------------------
+    private void WaitWhileFileLocked(FileInfo sourceFile, BackupJob job)
+    {
+        bool wasPaused = false;
+
+        while (IsFileLocked(sourceFile))
+        {
+            if (!wasPaused)
+            {
+                wasPaused = true;
+                _resumeSignal.Reset();
+
+                _repo.UpdateState(job.Id, e =>
+                {
+                    e.Status = JobStatus.Paused;
+                    e.LastActionTime = DateTime.Now;
+                    e.CurrentSourceFile = sourceFile.FullName;
+                });
+
+                _logger.Log(new LogEntry
+                {
+                    Timestamp = DateTime.Now,
+                    JobId = job.Id,
+                    BackupName = job.Name,
+                    Action = LogAction.BusinessSoftwareDetected,
+                    SourceFilePath = sourceFile.FullName,
+                    DestinationFilePath = string.Empty,
+                    FileSizeBytes = sourceFile.Exists ? sourceFile.Length : 0,
+                    TransferTimeMs = 0
+                });
+
+                JobPaused?.Invoke(this, job.Name);
+            }
+
+            _resumeSignal.Wait();
+
+            // FileInfo cache la taille/existence → on rafraîchit avant le re-test.
+            sourceFile.Refresh();
+        }
+
+        if (wasPaused)
+        {
+            _repo.UpdateState(job.Id, e =>
+            {
+                e.Status = JobStatus.Active;
+                e.LastActionTime = DateTime.Now;
+            });
+            JobResumed?.Invoke(this, job.Name);
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    // IsFileLocked : tente d'ouvrir le fichier en mode EXCLUSIF (FileShare.None).
+    // Si une autre app le tient (Word, Excel, etc.) → IOException → true.
+    // Si le fichier n'existe plus → on considère qu'il n'est pas verrouillé.
+    // ------------------------------------------------------------------------
+    private static bool IsFileLocked(FileInfo file)
+    {
+        if (!file.Exists) return false;
+
+        try
+        {
+            // FileShare.None = exclusif : aucun autre handle autorisé.
+            // Si Word a ouvert le .docx en partage-lecture, cet appel échoue.
+            using var stream = file.Open(FileMode.Open, FileAccess.Read, FileShare.None);
+            return false;
+        }
+        catch (IOException)
+        {
+            return true;          // verrouillé par un autre process
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return true;          // pas le droit en exclusif → considère verrouillé
+        }
+    }
+
     private void LogBusinessSoftwareDetected(BackupJob job)
     {
         _logger.Log(new LogEntry
         {
             Timestamp = DateTime.Now,
+            JobId = job.Id,
             BackupName = job.Name,
             Action = LogAction.BusinessSoftwareDetected,
             SourceFilePath = job.SourcePath,
@@ -245,6 +404,10 @@ public class BackupEngine
     {
         return new DirectoryInfo(root)
             .EnumerateFiles("*", SearchOption.AllDirectories)
+            // Filtre les fichiers de verrouillage Office (~$xxx.docx, ~$xxx.xlsx, ...).
+            // Ce sont des fichiers cachés temporaires créés par Word/Excel/PPT qui
+            // disparaissent à la fermeture de l'application → on ne les sauvegarde pas.
+            .Where(f => !f.Name.StartsWith("~$"))
             .ToList();
     }
 

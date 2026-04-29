@@ -28,13 +28,21 @@ public partial class App : Application
         ILogger logger = LoggerFactory.Create(AppConfig.LogFormat, pathService.GetLogDirectory);
         repo.SetLogger(logger);
 
-        // TODO (Oscar): instancier ProcessMonitorService (IBusinessSoftwareMonitor) et l'injecter dans BackupEngine.
+        // ProcessMonitorService : lit dynamiquement le nom du logiciel métier
+        // dans les settings → si l'utilisateur change le nom dans la fenêtre
+        // Paramètres, le moniteur prend la nouvelle valeur au prochain check.
+        var businessMonitor = new ProcessMonitorService(
+            () => settingsService.Current.BusinessSoftwareName);
+
         var crypto = new CryptoDispatcher(
             settingsService,
             new XorCryptoService(settingsService),
             new AesCryptoService(settingsService),
             new EciesCryptoService(settingsService));
-        var engine = new BackupEngine(repo, logger, crypto: crypto, settings: settingsService);
+        var engine = new BackupEngine(repo, logger,
+            businessMonitor: businessMonitor,
+            crypto: crypto,
+            settings: settingsService);
 
         SettingsService = settingsService;
         MainViewModel = new MainViewModel(repo, engine, settingsService);
