@@ -22,6 +22,7 @@ public partial class MainWindow : Window
 
     private void ShowExecution()
     {
+        App.MainViewModel.MarkExecutionViewed();
         ContentHost.Content = new JobExecutionView { DataContext = App.MainViewModel.Execution };
     }
 

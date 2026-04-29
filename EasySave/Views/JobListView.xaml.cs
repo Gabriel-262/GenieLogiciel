@@ -46,15 +46,15 @@ public partial class JobListView : UserControl
         Vm.JobList.DeleteJobCommand.Execute(selected.Id);
     }
 
-    private async void Execute_Click(object sender, RoutedEventArgs e)
+    private void Execute_Click(object sender, RoutedEventArgs e)
     {
         if (Grid.SelectedItem is not JobItemViewModel selected) return;
-        await Vm.JobList.ExecuteJobCommand.ExecuteAsync(selected.Id);
+        _ = Vm.JobList.ExecuteJobCommand.ExecuteAsync(selected.Id);
     }
 
-    private async void ExecuteAll_Click(object sender, RoutedEventArgs e)
+    private void ExecuteAll_Click(object sender, RoutedEventArgs e)
     {
-        await Vm.JobList.ExecuteAllCommand.ExecuteAsync(null);
+        _ = Vm.JobList.ExecuteAllCommand.ExecuteAsync(null);
     }
 
     private void Refresh_Click(object sender, RoutedEventArgs e)

@@ -63,12 +63,30 @@ public class BackupEngine
         var ids = jobIds.ToList();
         return Task.Run(() =>
         {
+            // Pré-calcul : on collecte tous les chemins de destination attendus
+            // par tous les jobs du batch. Permet à RemoveOrphans de préserver
+            // les fichiers d'un autre job du même batch qui partage le même
+            // dossier cible — sinon le dernier job effacerait les copies des
+            // précédents.
+            var batchPreserve = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (int id in ids)
+            {
+                var j = _repo.GetJobById(id);
+                if (j is null || !Directory.Exists(j.SourcePath)) continue;
+                foreach (var f in ScanDirectory(j.SourcePath))
+                {
+                    string rel = Path.GetRelativePath(j.SourcePath, f.FullName);
+                    batchPreserve.Add(Path.Combine(j.TargetPath, rel));
+                }
+            }
+
             foreach (int id in ids)
             {
                 if (ct.IsCancellationRequested) break;
                 var job = _repo.GetJobById(id);
                 if (job is null) continue;
-                ExecuteJob(job);
+                try { ExecuteJob(job, batchPreserve); }
+                catch { /* skip failed job, continue with the next */ }
             }
         }, ct);
     }
@@ -76,7 +94,9 @@ public class BackupEngine
     public Task ExecuteJobAsync(BackupJob job, CancellationToken ct = default)
         => Task.Run(() => ExecuteJob(job), ct);
 
-    public void ExecuteJob(BackupJob job)
+    public void ExecuteJob(BackupJob job) => ExecuteJob(job, null);
+
+    public void ExecuteJob(BackupJob job, IReadOnlySet<string>? batchPreserve)
     {
         if (!Directory.Exists(job.SourcePath)) return;
 
@@ -87,6 +107,8 @@ public class BackupEngine
         Directory.CreateDirectory(job.TargetPath);
 
         JobStarted?.Invoke(this, job.Name);
+        try
+        {
 
         var files = ScanDirectory(job.SourcePath);
         long totalSize = files.Sum(f => f.Length);
@@ -168,10 +190,13 @@ public class BackupEngine
             PushProgress(job, sourceFile.FullName, destination, processed, totalFiles, bytesDone, totalSize);
         }
 
-        RemoveOrphans(job, files);
-
-        _repo.ClearState(job.Id);
-        JobCompleted?.Invoke(this, job.Name);
+        RemoveOrphans(job, files, batchPreserve);
+        }
+        finally
+        {
+            _repo.ClearState(job.Id);
+            JobCompleted?.Invoke(this, job.Name);
+        }
     }
 
     // ------------------------------------------------------------------------
@@ -322,7 +347,7 @@ public class BackupEngine
         });
     }
 
-    private void RemoveOrphans(BackupJob job, List<FileInfo> sourceFiles)
+    private void RemoveOrphans(BackupJob job, List<FileInfo> sourceFiles, IReadOnlySet<string>? batchPreserve)
     {
         if (!Directory.Exists(job.TargetPath)) return;
 
@@ -333,6 +358,7 @@ public class BackupEngine
         foreach (var destFile in new DirectoryInfo(job.TargetPath).EnumerateFiles("*", SearchOption.AllDirectories))
         {
             if (expected.Contains(destFile.FullName)) continue;
+            if (batchPreserve is not null && batchPreserve.Contains(destFile.FullName)) continue;
 
             long size = destFile.Length;
             string fullPath = destFile.FullName;

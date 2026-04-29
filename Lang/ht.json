@@ -120,5 +120,7 @@
 
   "UI_Confirm_DeleteTitle": "Konfime efasman",
   "UI_Confirm_DeleteJob": "Efase travay \"{0}\" (id {1})?",
-  "UI_Cannot_AddJob": "Pa kapab ajoute travay"
+  "UI_Cannot_AddJob": "Pa kapab ajoute travay",
+
+  "UI_Exec_InProgress": "Sovgad lanse — ouvri ond 'Egzekisyon' pou wè eta li."
 }

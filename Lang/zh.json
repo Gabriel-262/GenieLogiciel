@@ -118,5 +118,7 @@
 
   "UI_Confirm_DeleteTitle": "确认删除",
   "UI_Confirm_DeleteJob": "删除任务 \"{0}\" (id {1})？",
-  "UI_Cannot_AddJob": "无法添加任务"
+  "UI_Cannot_AddJob": "无法添加任务",
+
+  "UI_Exec_InProgress": "备份已启动 — 打开“执行”选项卡以查看状态。"
 }

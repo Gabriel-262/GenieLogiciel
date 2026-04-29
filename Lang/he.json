@@ -118,5 +118,7 @@
 
   "UI_Confirm_DeleteTitle": "אישור מחיקה",
   "UI_Confirm_DeleteJob": "למחוק את המשימה \"{0}\" (מזהה {1})?",
-  "UI_Cannot_AddJob": "לא ניתן להוסיף משימה"
+  "UI_Cannot_AddJob": "לא ניתן להוסיף משימה",
+
+  "UI_Exec_InProgress": "הגיבוי הופעל — פתח את לשונית 'הרצה' כדי לראות את הסטטוס."
 }

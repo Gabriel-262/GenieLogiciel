@@ -120,5 +120,7 @@
 
   "UI_Confirm_DeleteTitle": "Confirmer la suppression",
   "UI_Confirm_DeleteJob": "Supprimer le travail \"{0}\" (id {1}) ?",
-  "UI_Cannot_AddJob": "Impossible d'ajouter le travail"
+  "UI_Cannot_AddJob": "Impossible d'ajouter le travail",
+
+  "UI_Exec_InProgress": "Sauvegarde lancée — ouvre l'onglet Exécution pour voir son état."
 }

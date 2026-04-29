@@ -120,5 +120,7 @@
 
   "UI_Confirm_DeleteTitle": "Confirm delete",
   "UI_Confirm_DeleteJob": "Delete job \"{0}\" (id {1})?",
-  "UI_Cannot_AddJob": "Cannot add job"
+  "UI_Cannot_AddJob": "Cannot add job",
+
+  "UI_Exec_InProgress": "Backup launched — open the Execution tab to see its status."
 }

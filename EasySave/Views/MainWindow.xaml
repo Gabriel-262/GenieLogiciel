@@ -9,6 +9,9 @@
         Background="{DynamicResource BackgroundBrush}"
         Foreground="{DynamicResource ForegroundBrush}"
         WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+    </Window.Resources>
 
     <Grid>
         <Grid.ColumnDefinitions>
@@ -27,7 +30,25 @@
                 <TextBlock Text="v2.0" Style="{StaticResource Muted}" Margin="0,0,0,24"/>
 
                 <Button Content="{DynamicResource UI_Sidebar_Jobs}"      Margin="0,0,0,6" Click="NavJobs_Click"      HorizontalContentAlignment="Left"/>
-                <Button Content="{DynamicResource UI_Sidebar_Execution}" Margin="0,0,0,6" Click="NavExecution_Click" HorizontalContentAlignment="Left"/>
+
+                <Grid Margin="0,0,0,6">
+                    <Button Content="{DynamicResource UI_Sidebar_Execution}" Click="NavExecution_Click" HorizontalContentAlignment="Left"/>
+                    <Border HorizontalAlignment="Right" VerticalAlignment="Center"
+                            Margin="0,0,12,0"
+                            Background="#DC2626"
+                            CornerRadius="10"
+                            MinWidth="20" Height="20"
+                            Padding="6,0"
+                            Visibility="{Binding IsExecutionBadgeVisible, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="{Binding UnseenExecutionCount}"
+                                   Foreground="White"
+                                   FontSize="11"
+                                   FontWeight="Bold"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"/>
+                    </Border>
+                </Grid>
+
                 <Button Content="{DynamicResource UI_Sidebar_Settings}"  Margin="0,0,0,6" Click="NavSettings_Click"  HorizontalContentAlignment="Left"/>
 
                 <TextBlock Text="{Binding Settings.LanguageDisplayName}"
