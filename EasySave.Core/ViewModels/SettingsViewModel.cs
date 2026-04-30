@@ -22,6 +22,9 @@ public partial class SettingsViewModel : ObservableObject
         configPath = settings.Current.ConfigPath ?? string.Empty;
         langPath = settings.Current.LangPath ?? string.Empty;
         cryptoMode = string.IsNullOrEmpty(settings.Current.CryptoMode) ? "Rapide" : settings.Current.CryptoMode;
+        maxJobs = settings.Current.MaxJobs?.ToString() ?? string.Empty;
+        businessSoftwareCheckMode = string.IsNullOrEmpty(settings.Current.BusinessSoftwareCheckMode)
+            ? "StartOnly" : settings.Current.BusinessSoftwareCheckMode;
         EncryptedExtensions = new ObservableCollection<string>(settings.Current.EncryptedExtensions);
     }
 
@@ -37,6 +40,8 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private string configPath;
     [ObservableProperty] private string langPath;
     [ObservableProperty] private string cryptoMode;
+    [ObservableProperty] private string maxJobs;
+    [ObservableProperty] private string businessSoftwareCheckMode;
 
     public ObservableCollection<string> EncryptedExtensions { get; }
 
@@ -90,6 +95,37 @@ public partial class SettingsViewModel : ObservableObject
     private void ChangeConfigPath(string path) { ConfigPath = path; _settings.Current.ConfigPath = Nullable(path); _settings.Save(); AppConfig.Settings = _settings.Current; }
     [RelayCommand]
     private void ChangeLangPath(string path)   { LangPath = path;   _settings.Current.LangPath = Nullable(path);   _settings.Save(); AppConfig.Settings = _settings.Current; }
+
+    [RelayCommand]
+    private void ChangeMaxJobs(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            MaxJobs = string.Empty;
+            _settings.Current.MaxJobs = null;
+        }
+        else if (int.TryParse(value.Trim(), out int n) && n > 0)
+        {
+            MaxJobs = n.ToString();
+            _settings.Current.MaxJobs = n;
+        }
+        else
+        {
+            return;
+        }
+        _settings.Save();
+        AppConfig.Settings = _settings.Current;
+    }
+
+    [RelayCommand]
+    private void ToggleBusinessSoftwareCheckMode()
+    {
+        BusinessSoftwareCheckMode = string.Equals(BusinessSoftwareCheckMode, "StartOnly",
+            StringComparison.OrdinalIgnoreCase) ? "Continuous" : "StartOnly";
+        _settings.Current.BusinessSoftwareCheckMode = BusinessSoftwareCheckMode;
+        _settings.Save();
+        AppConfig.Settings = _settings.Current;
+    }
 
     [RelayCommand]
     private void ToggleCryptoMode()

@@ -40,6 +40,27 @@
                 </StackPanel>
             </Border>
 
+            <!-- Jobs -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="{DynamicResource UI_Settings_Jobs}" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                    <TextBlock Style="{StaticResource Muted}"
+                               Text="{DynamicResource UI_Settings_MaxJobsDesc}"/>
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="MaxJobsBox" Grid.Column="0"
+                                 Text="{Binding MaxJobs, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Button Grid.Column="1" Content="{DynamicResource UI_Btn_Save}" Margin="8,0,0,0"
+                                Style="{StaticResource PrimaryButton}"
+                                Command="{Binding ChangeMaxJobsCommand}"
+                                CommandParameter="{Binding Text, ElementName=MaxJobsBox}"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
             <!-- Business software -->
             <Border Style="{StaticResource Card}" Margin="0,0,0,16">
                 <StackPanel>
@@ -58,6 +79,14 @@
                                 Command="{Binding ChangeBusinessSoftwareNameCommand}"
                                 CommandParameter="{Binding Text, ElementName=BusinessSoftwareBox}"/>
                     </Grid>
+
+                    <TextBlock Text="{DynamicResource UI_Settings_BizCheckMode}"
+                               Style="{StaticResource Muted}" Margin="0,12,0,4"/>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding BusinessSoftwareCheckMode}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <Button Content="{DynamicResource UI_Settings_ToggleBizCheckMode}"
+                                Command="{Binding ToggleBusinessSoftwareCheckModeCommand}"/>
+                    </StackPanel>
                 </StackPanel>
             </Border>
 

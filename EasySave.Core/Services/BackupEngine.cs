@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Security.Cryptography;
 using EasyLog;
 using EasySave.Models;
 
@@ -63,29 +62,12 @@ public class BackupEngine
         var ids = jobIds.ToList();
         return Task.Run(() =>
         {
-            // Pré-calcul : on collecte tous les chemins de destination attendus
-            // par tous les jobs du batch. Permet à RemoveOrphans de préserver
-            // les fichiers d'un autre job du même batch qui partage le même
-            // dossier cible — sinon le dernier job effacerait les copies des
-            // précédents.
-            var batchPreserve = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (int id in ids)
-            {
-                var j = _repo.GetJobById(id);
-                if (j is null || !Directory.Exists(j.SourcePath)) continue;
-                foreach (var f in ScanDirectory(j.SourcePath))
-                {
-                    string rel = Path.GetRelativePath(j.SourcePath, f.FullName);
-                    batchPreserve.Add(Path.Combine(j.TargetPath, rel));
-                }
-            }
-
             foreach (int id in ids)
             {
                 if (ct.IsCancellationRequested) break;
                 var job = _repo.GetJobById(id);
                 if (job is null) continue;
-                try { ExecuteJob(job, batchPreserve); }
+                try { ExecuteJob(job); }
                 catch { /* skip failed job, continue with the next */ }
             }
         }, ct);
@@ -94,9 +76,7 @@ public class BackupEngine
     public Task ExecuteJobAsync(BackupJob job, CancellationToken ct = default)
         => Task.Run(() => ExecuteJob(job), ct);
 
-    public void ExecuteJob(BackupJob job) => ExecuteJob(job, null);
-
-    public void ExecuteJob(BackupJob job, IReadOnlySet<string>? batchPreserve)
+    public void ExecuteJob(BackupJob job)
     {
         if (!Directory.Exists(job.SourcePath)) return;
 
@@ -128,10 +108,17 @@ public class BackupEngine
         int processed = 0;
         long bytesDone = 0;
 
+        bool continuousBusinessCheck = !string.Equals(
+            _settings?.Current.BusinessSoftwareCheckMode, "StartOnly",
+            StringComparison.OrdinalIgnoreCase);
+
         foreach (var sourceFile in files)
         {
             // CHECK 1 : logiciel métier global (configuré dans Paramètres).
-            WaitWhileBusinessSoftwareRunning(job);
+            // En mode StartOnly, on ne re-check pas entre les fichiers : la
+            // vérification pré-job en haut d'ExecuteJob suffit.
+            if (continuousBusinessCheck)
+                WaitWhileBusinessSoftwareRunning(job);
 
             // CHECK 2 : fichier source verrouillé par une autre application
             // (ex. .docx ouvert dans Word). On bloque AVANT la copie : si on
@@ -172,6 +159,18 @@ public class BackupEngine
                 cryptoMs = _crypto.Encrypt(destination);
             }
 
+            // Préserve LastWriteTime de la source sur la destination (et écrase
+            // celui posé par File.Copy/le chiffrement). Sert de "marqueur de
+            // version" pour le différentiel : on saura à la prochaine passe si
+            // la source a été modifiée depuis la dernière sauvegarde, sans
+            // jamais avoir à relire le contenu (ce qui serait de toute façon
+            // impossible côté destination si elle est chiffrée).
+            if (elapsedMs >= 0)
+            {
+                try { File.SetLastWriteTimeUtc(destination, sourceFile.LastWriteTimeUtc); }
+                catch { /* horodatage best-effort, pas bloquant */ }
+            }
+
             _logger.Log(new LogEntry
             {
                 Timestamp = DateTime.Now,
@@ -189,8 +188,6 @@ public class BackupEngine
             bytesDone += sourceFile.Length;
             PushProgress(job, sourceFile.FullName, destination, processed, totalFiles, bytesDone, totalSize);
         }
-
-        RemoveOrphans(job, files, batchPreserve);
         }
         finally
         {
@@ -347,38 +344,6 @@ public class BackupEngine
         });
     }
 
-    private void RemoveOrphans(BackupJob job, List<FileInfo> sourceFiles, IReadOnlySet<string>? batchPreserve)
-    {
-        if (!Directory.Exists(job.TargetPath)) return;
-
-        var expected = new HashSet<string>(
-            sourceFiles.Select(f => Path.Combine(job.TargetPath, Path.GetRelativePath(job.SourcePath, f.FullName))),
-            StringComparer.OrdinalIgnoreCase);
-
-        foreach (var destFile in new DirectoryInfo(job.TargetPath).EnumerateFiles("*", SearchOption.AllDirectories))
-        {
-            if (expected.Contains(destFile.FullName)) continue;
-            if (batchPreserve is not null && batchPreserve.Contains(destFile.FullName)) continue;
-
-            long size = destFile.Length;
-            string fullPath = destFile.FullName;
-            try { destFile.Delete(); }
-            catch { continue; }
-
-            _logger.Log(new LogEntry
-            {
-                Timestamp = DateTime.Now,
-                JobId = job.Id,
-                BackupName = job.Name,
-                Action = LogAction.Delete,
-                SourceFilePath = string.Empty,
-                DestinationFilePath = fullPath,
-                FileSizeBytes = size,
-                TransferTimeMs = 0
-            });
-        }
-    }
-
     private void PushProgress(BackupJob job, string sourceFile, string destinationFile,
         int processed, int totalFiles, long bytesDone, long totalBytes)
     {
@@ -440,26 +405,15 @@ public class BackupEngine
     private static bool NeedsCopy(FileInfo source, string destinationPath)
     {
         if (!File.Exists(destinationPath)) return true;
-        var dest = new FileInfo(destinationPath);
-        if (source.Length != dest.Length) return true;
-        return !FilesHaveSameHash(source.FullName, destinationPath);
-    }
 
-    private static bool FilesHaveSameHash(string path1, string path2)
-    {
-        try
-        {
-            using var md5 = MD5.Create();
-            using var s1 = File.OpenRead(path1);
-            using var s2 = File.OpenRead(path2);
-            byte[] h1 = md5.ComputeHash(s1);
-            byte[] h2 = md5.ComputeHash(s2);
-            return h1.SequenceEqual(h2);
-        }
-        catch
-        {
-            return false;
-        }
+        // On compare les LastWriteTime UTC source / destination. Après chaque
+        // copie, BackupEngine recopie le LastWriteTime de la source sur la
+        // destination → un fichier inchangé conserve le même timestamp et est
+        // ignoré au prochain run différentiel.
+        // Tolérance de 2s : certains FS (FAT32) ont une résolution de 2s.
+        DateTime sourceTime = source.LastWriteTimeUtc;
+        DateTime destTime   = File.GetLastWriteTimeUtc(destinationPath);
+        return Math.Abs((sourceTime - destTime).TotalSeconds) > 2;
     }
 
     private static long CopyFile(string source, string destination)

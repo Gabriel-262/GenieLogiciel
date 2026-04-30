@@ -9,6 +9,10 @@ public class AppSettings
     public int? MaxJobs { get; set; }
     public string BusinessSoftwareName { get; set; } = string.Empty;
 
+    // "StartOnly"  : on vérifie une seule fois avant le démarrage du job.
+    // "Continuous" : on vérifie aussi entre chaque fichier (ancien comportement).
+    public string BusinessSoftwareCheckMode { get; set; } = "StartOnly";
+
     public string? LogPath { get; set; }
     public string? StatePath { get; set; }
     public string? ConfigPath { get; set; }

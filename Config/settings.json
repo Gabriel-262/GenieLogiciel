@@ -5,6 +5,7 @@
   "LogFormat": "xml",
   "MaxJobs": null,
   "BusinessSoftwareName": "",
+  "BusinessSoftwareCheckMode": "Continuous",
   "LogPath": null,
   "StatePath": null,
   "ConfigPath": null,
@@ -15,7 +16,7 @@
     ".pdf"
   ],
   "CryptoMode": "Standard",
-  "CryptoKey": "TelAvivMaseltov",
+  "CryptoKey": "CryptoSoft",
   "CryptoSoftPath": null,
   "CryptoPublicKey": null,
   "CryptoPrivateKey": null,

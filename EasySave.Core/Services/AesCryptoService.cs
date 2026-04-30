@@ -5,12 +5,16 @@ using System.Text;
 namespace EasySave.Services;
 
 /// <summary>
-/// Mode "Standard" — AES-256-CBC en interne, sans appel d'exe externe.
-/// Clé 256 bits dérivée par SHA-256 sur la passphrase, IV aléatoire préfixé au ciphertext.
-/// Codes erreur: -1 fichier introuvable, -3 erreur de chiffrement.
+/// "Standard" mode — AES-256-CBC streamed via CryptoStream, no external exe.
+/// 256-bit key derived by SHA-256 from the passphrase, random IV prefixed
+/// to the ciphertext. Encryption is performed to a sibling .tmp file then
+/// atomically moved over the original to bound memory usage and avoid
+/// corruption on crash. Error codes: -1 file not found, -3 encryption error.
 /// </summary>
 public class AesCryptoService : ICryptoSoft
 {
+    private const int BufferSize = 81920;
+
     private readonly SettingsService _settings;
 
     public AesCryptoService(SettingsService settings)
@@ -26,32 +30,44 @@ public class AesCryptoService : ICryptoSoft
             ? "EasySaveDefaultKey"
             : _settings.Current.CryptoKey;
 
+        string tmpPath = filePath + ".enc.tmp";
         var sw = Stopwatch.StartNew();
         try
         {
-            byte[] plain = File.ReadAllBytes(filePath);
-            byte[] key   = SHA256.HashData(Encoding.UTF8.GetBytes(passphrase));
+            byte[] key = SHA256.HashData(Encoding.UTF8.GetBytes(passphrase));
 
-            using var aes = Aes.Create();
-            aes.Key = key;
-            aes.GenerateIV();
-            aes.Mode    = CipherMode.CBC;
-            aes.Padding = PaddingMode.PKCS7;
+            using (var aes = Aes.Create())
+            {
+                aes.Key     = key;
+                aes.Mode    = CipherMode.CBC;
+                aes.Padding = PaddingMode.PKCS7;
+                aes.GenerateIV();
 
-            using var encryptor = aes.CreateEncryptor();
-            byte[] body = encryptor.TransformFinalBlock(plain, 0, plain.Length);
+                using var input  = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, BufferSize);
+                using var output = new FileStream(tmpPath, FileMode.Create, FileAccess.Write, FileShare.None, BufferSize);
 
-            byte[] output = new byte[aes.IV.Length + body.Length];
-            Buffer.BlockCopy(aes.IV, 0, output, 0, aes.IV.Length);
-            Buffer.BlockCopy(body,  0, output, aes.IV.Length, body.Length);
+                output.Write(aes.IV, 0, aes.IV.Length);
 
-            File.WriteAllBytes(filePath, output);
+                using var encryptor = aes.CreateEncryptor();
+                using var crypto = new CryptoStream(output, encryptor, CryptoStreamMode.Write, leaveOpen: true);
+                input.CopyTo(crypto, BufferSize);
+                crypto.FlushFinalBlock();
+            }
+
+            File.Move(tmpPath, filePath, overwrite: true);
             sw.Stop();
             return Math.Max(1, sw.ElapsedMilliseconds);
         }
         catch
         {
+            TryDelete(tmpPath);
             return -3;
         }
+    }
+
+    private static void TryDelete(string path)
+    {
+        try { if (File.Exists(path)) File.Delete(path); }
+        catch { }
     }
 }
