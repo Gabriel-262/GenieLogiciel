@@ -25,3 +25,7 @@ Thumbs.db
 local.settings.json
 
 .mermaid-tools
+
+.claude/
+Logs/
+State/
