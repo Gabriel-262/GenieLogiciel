@@ -55,8 +55,7 @@
                                  Text="{Binding MaxJobs, UpdateSourceTrigger=PropertyChanged}"/>
                         <Button Grid.Column="1" Content="{DynamicResource UI_Btn_Save}" Margin="8,0,0,0"
                                 Style="{StaticResource PrimaryButton}"
-                                Command="{Binding ChangeMaxJobsCommand}"
-                                CommandParameter="{Binding Text, ElementName=MaxJobsBox}"/>
+                                Click="SaveMaxJobs_Click"/>
                     </Grid>
                 </StackPanel>
             </Border>

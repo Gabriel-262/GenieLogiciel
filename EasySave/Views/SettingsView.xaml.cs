@@ -30,6 +30,26 @@ public partial class SettingsView : UserControl
         App.SettingsService.Save();
     }
 
+    private void SaveMaxJobs_Click(object sender, RoutedEventArgs e)
+    {
+        string raw = MaxJobsBox.Text?.Trim() ?? string.Empty;
+        Vm.ChangeMaxJobsCommand.Execute(raw);
+
+        // Avertit l'utilisateur s'il vient de fixer une limite inférieure au
+        // nombre de jobs déjà existants : on ne supprime rien, on l'informe.
+        if (int.TryParse(raw, out int n) && n > 0)
+        {
+            int existing = App.MainViewModel.JobList.Count;
+            if (existing > n)
+            {
+                MessageBox.Show(
+                    string.Format(Translator.Get("UI_Warn_MaxJobsExceeded"), existing, n),
+                    Translator.Get("UI_Settings_Title"),
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+    }
+
     private void SavePaths_Click(object sender, RoutedEventArgs e)
     {
         Vm.ChangeLogPathCommand.Execute(Vm.LogPath);

@@ -10,6 +10,7 @@ public partial class JobItemViewModel : ObservableObject
     [ObservableProperty] private string sourcePath = string.Empty;
     [ObservableProperty] private string targetPath = string.Empty;
     [ObservableProperty] private BackupType type;
+    [ObservableProperty] private bool isSelected;
 
     public JobItemViewModel() { }
 

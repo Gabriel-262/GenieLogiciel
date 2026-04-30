@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using EasySave.Resources;
@@ -48,13 +49,37 @@ public partial class JobListView : UserControl
 
     private void Execute_Click(object sender, RoutedEventArgs e)
     {
-        if (Grid.SelectedItem is not JobItemViewModel selected) return;
-        _ = Vm.JobList.ExecuteJobCommand.ExecuteAsync(selected.Id);
+        var checkedIds = Vm.JobList.Jobs.Where(j => j.IsSelected).Select(j => j.Id).ToList();
+        if (checkedIds.Count == 0) return;
+        if (!EnsureWithinLimit(checkedIds.Count)) return;
+        _ = Vm.JobList.ExecuteManyCommand.ExecuteAsync(checkedIds);
     }
 
     private void ExecuteAll_Click(object sender, RoutedEventArgs e)
     {
+        if (!EnsureWithinLimit(Vm.JobList.Count)) return;
         _ = Vm.JobList.ExecuteAllCommand.ExecuteAsync(null);
+    }
+
+    private bool EnsureWithinLimit(int requestedCount)
+    {
+        int max = AppConfig.MaxJobs;
+        if (requestedCount <= max) return true;
+        MessageBox.Show(
+            string.Format(Translator.Get("UI_Warn_TooManyJobsToExecute"), requestedCount, max),
+            Translator.Get("UI_Cannot_Execute"),
+            MessageBoxButton.OK, MessageBoxImage.Warning);
+        return false;
+    }
+
+    private void SelectAll_Click(object sender, RoutedEventArgs e)
+    {
+        foreach (var j in Vm.JobList.Jobs) j.IsSelected = true;
+    }
+
+    private void DeselectAll_Click(object sender, RoutedEventArgs e)
+    {
+        foreach (var j in Vm.JobList.Jobs) j.IsSelected = false;
     }
 
     private void Refresh_Click(object sender, RoutedEventArgs e)

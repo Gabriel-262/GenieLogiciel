@@ -3,7 +3,7 @@
   "Language": "fr",
   "BackKey": "r",
   "LogFormat": "xml",
-  "MaxJobs": null,
+  "MaxJobs": 1,
   "BusinessSoftwareName": "",
   "BusinessSoftwareCheckMode": "Continuous",
   "LogPath": null,

@@ -75,6 +75,8 @@
   "UI_Btn_Execute": "Execute",
   "UI_Btn_ExecuteAll": "Execute all",
   "UI_Btn_Refresh": "Refresh",
+  "UI_Btn_SelectAll": "Select all",
+  "UI_Btn_DeselectAll": "Deselect all",
   "UI_Btn_Cancel": "Cancel",
   "UI_Btn_Save": "Save",
   "UI_Btn_SavePaths": "Save paths",
@@ -105,7 +107,7 @@
   "UI_Settings_Format": "Format: ",
   "UI_Settings_ToggleLogFormat": "Toggle JSON / XML",
   "UI_Settings_Jobs": "Jobs",
-  "UI_Settings_MaxJobsDesc": "Maximum number of backup jobs (empty = unlimited).",
+  "UI_Settings_MaxJobsDesc": "Maximum number of backup jobs.",
   "UI_Settings_BizMonitor": "Business software monitor",
   "UI_Settings_BizMonitorDesc": "Backups are paused when this process is running.",
   "UI_Settings_BizCheckMode": "Check mode (StartOnly = at job start only, Continuous = before every file)",
@@ -125,6 +127,9 @@
   "UI_Confirm_DeleteTitle": "Confirm delete",
   "UI_Confirm_DeleteJob": "Delete job \"{0}\" (id {1})?",
   "UI_Cannot_AddJob": "Cannot add job",
+  "UI_Cannot_Execute": "Cannot execute",
+  "UI_Warn_MaxJobsExceeded": "Warning: you have {0} jobs configured but the new limit is {1}. Existing jobs are kept, but you cannot execute more than {1} at once.",
+  "UI_Warn_TooManyJobsToExecute": "You selected {0} jobs but the limit is {1}. Uncheck some or raise the limit in Settings.",
 
   "UI_Exec_InProgress": "Backup launched — open the Execution tab to see its status."
 }

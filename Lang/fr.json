@@ -75,6 +75,8 @@
   "UI_Btn_Execute": "Exécuter",
   "UI_Btn_ExecuteAll": "Tout exécuter",
   "UI_Btn_Refresh": "Rafraîchir",
+  "UI_Btn_SelectAll": "Tout cocher",
+  "UI_Btn_DeselectAll": "Tout décocher",
   "UI_Btn_Cancel": "Annuler",
   "UI_Btn_Save": "Enregistrer",
   "UI_Btn_SavePaths": "Enregistrer les chemins",
@@ -105,7 +107,7 @@
   "UI_Settings_Format": "Format : ",
   "UI_Settings_ToggleLogFormat": "Basculer JSON / XML",
   "UI_Settings_Jobs": "Travaux",
-  "UI_Settings_MaxJobsDesc": "Nombre maximum de travaux de sauvegarde (vide = illimité).",
+  "UI_Settings_MaxJobsDesc": "Nombre maximum de travaux de sauvegarde.",
   "UI_Settings_BizMonitor": "Surveillance de logiciel métier",
   "UI_Settings_BizMonitorDesc": "Les sauvegardes sont mises en pause quand ce processus s'exécute.",
   "UI_Settings_BizCheckMode": "Mode de vérification (StartOnly = au lancement uniquement, Continuous = avant chaque fichier)",
@@ -125,6 +127,9 @@
   "UI_Confirm_DeleteTitle": "Confirmer la suppression",
   "UI_Confirm_DeleteJob": "Supprimer le travail \"{0}\" (id {1}) ?",
   "UI_Cannot_AddJob": "Impossible d'ajouter le travail",
+  "UI_Cannot_Execute": "Impossible d'exécuter",
+  "UI_Warn_MaxJobsExceeded": "Attention : vous avez {0} travaux configurés mais la nouvelle limite est de {1}. Les travaux existants sont conservés mais vous ne pourrez pas en exécuter plus de {1} à la fois.",
+  "UI_Warn_TooManyJobsToExecute": "Vous avez sélectionné {0} travaux mais la limite est de {1}. Décochez-en ou augmentez la limite dans les Paramètres.",
 
   "UI_Exec_InProgress": "Sauvegarde lancée — ouvre l'onglet Exécution pour voir son état."
 }

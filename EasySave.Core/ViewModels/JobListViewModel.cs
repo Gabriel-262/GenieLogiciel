@@ -22,15 +22,34 @@ public partial class JobListViewModel : ObservableObject
     public int Count => Jobs.Count;
     public bool IsEmpty => Jobs.Count == 0;
     public bool IsFull => Jobs.Count >= AppConfig.MaxJobs;
+    public bool HasAnyChecked => Jobs.Any(j => j.IsSelected);
 
     public void Refresh()
     {
+        var previouslyChecked = Jobs.Where(j => j.IsSelected).Select(j => j.Id).ToHashSet();
+
+        // Détache les handlers IsSelected des anciennes VMs avant Clear,
+        // sinon HasAnyChecked continuerait de les écouter.
+        foreach (var oldVm in Jobs) oldVm.PropertyChanged -= OnJobItemPropertyChanged;
+
         Jobs.Clear();
         foreach (var job in _repo.GetAllJobs())
-            Jobs.Add(new JobItemViewModel(job));
+        {
+            var vm = new JobItemViewModel(job);
+            if (previouslyChecked.Contains(job.Id)) vm.IsSelected = true;
+            vm.PropertyChanged += OnJobItemPropertyChanged;
+            Jobs.Add(vm);
+        }
         OnPropertyChanged(nameof(Count));
         OnPropertyChanged(nameof(IsEmpty));
         OnPropertyChanged(nameof(IsFull));
+        OnPropertyChanged(nameof(HasAnyChecked));
+    }
+
+    private void OnJobItemPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(JobItemViewModel.IsSelected))
+            OnPropertyChanged(nameof(HasAnyChecked));
     }
 
     public JobItemViewModel? FindById(int id) =>
