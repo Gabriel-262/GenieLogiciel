@@ -299,6 +299,7 @@ public class ConsoleMenu
         Console.WriteLine("3. 中文");
         Console.WriteLine("4. עברית");
         Console.WriteLine("5. Kreyòl");
+        Console.WriteLine("6. Ch'ti");
         Console.WriteLine();
         Console.Write(Translator.Get("Prompt_Choice"));
 
@@ -312,6 +313,7 @@ public class ConsoleMenu
             "3" => "zh",
             "4" => "he",
             "5" => "ht",
+            "6" => "ch",
             _   => null
         };
 

@@ -10,6 +10,11 @@ namespace EasySave.Services;
 /// </summary>
 public class XorCryptoService : ICryptoSoft
 {
+    // Mutex système : garantit qu'une seule instance de CryptoSoft.exe tourne
+    // à la fois, même avec plusieurs jobs/fichiers en parallèle. Contrainte
+    // imposée à l'exe externe (mode Rapide) ; AES/ECIES n'y sont pas soumis.
+    private const string CryptoSoftMutexName = "Global\\EasySave_CryptoSoft_SingleInstance";
+
     private readonly SettingsService _settings;
 
     public XorCryptoService(SettingsService settings)
@@ -39,8 +44,13 @@ public class XorCryptoService : ICryptoSoft
         psi.ArgumentList.Add(filePath);
         psi.ArgumentList.Add(key);
 
+        using var mutex = new Mutex(initiallyOwned: false, CryptoSoftMutexName);
+        bool acquired = false;
         try
         {
+            try { acquired = mutex.WaitOne(); }
+            catch (AbandonedMutexException) { acquired = true; }
+
             using var process = Process.Start(psi);
             if (process is null) return -2;
             process.WaitForExit();
@@ -54,6 +64,13 @@ public class XorCryptoService : ICryptoSoft
         catch
         {
             return -2;
+        }
+        finally
+        {
+            if (acquired)
+            {
+                try { mutex.ReleaseMutex(); } catch { /* best-effort */ }
+            }
         }
     }
 

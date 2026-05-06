@@ -23,6 +23,9 @@ public partial class SettingsViewModel : ObservableObject
         langPath = settings.Current.LangPath ?? string.Empty;
         cryptoMode = string.IsNullOrEmpty(settings.Current.CryptoMode) ? "Rapide" : settings.Current.CryptoMode;
         maxJobs = settings.Current.MaxJobs?.ToString() ?? string.Empty;
+        maxParallelJobs = settings.Current.MaxParallelJobs.ToString();
+        maxParallelFilesPerJob = settings.Current.MaxParallelFilesPerJob.ToString();
+        largeFileThresholdKb = settings.Current.LargeFileThresholdKb.ToString();
         businessSoftwareCheckMode = string.IsNullOrEmpty(settings.Current.BusinessSoftwareCheckMode)
             ? "StartOnly" : settings.Current.BusinessSoftwareCheckMode;
         EncryptedExtensions = new ObservableCollection<string>(settings.Current.EncryptedExtensions);
@@ -41,6 +44,9 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private string langPath;
     [ObservableProperty] private string cryptoMode;
     [ObservableProperty] private string maxJobs;
+    [ObservableProperty] private string maxParallelJobs;
+    [ObservableProperty] private string maxParallelFilesPerJob;
+    [ObservableProperty] private string largeFileThresholdKb;
     [ObservableProperty] private string businessSoftwareCheckMode;
 
     public ObservableCollection<string> EncryptedExtensions { get; }
@@ -118,6 +124,42 @@ public partial class SettingsViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void ChangeMaxParallelJobs(string value)
+    {
+        if (int.TryParse(value?.Trim(), out int n) && n >= 1)
+        {
+            MaxParallelJobs = n.ToString();
+            _settings.Current.MaxParallelJobs = n;
+            _settings.Save();
+            AppConfig.Settings = _settings.Current;
+        }
+    }
+
+    [RelayCommand]
+    private void ChangeMaxParallelFilesPerJob(string value)
+    {
+        if (int.TryParse(value?.Trim(), out int n) && n >= 1)
+        {
+            MaxParallelFilesPerJob = n.ToString();
+            _settings.Current.MaxParallelFilesPerJob = n;
+            _settings.Save();
+            AppConfig.Settings = _settings.Current;
+        }
+    }
+
+    [RelayCommand]
+    private void ChangeLargeFileThresholdKb(string value)
+    {
+        if (int.TryParse(value?.Trim(), out int n) && n >= 0)
+        {
+            LargeFileThresholdKb = n.ToString();
+            _settings.Current.LargeFileThresholdKb = n;
+            _settings.Save();
+            AppConfig.Settings = _settings.Current;
+        }
+    }
+
+    [RelayCommand]
     private void ToggleBusinessSoftwareCheckMode()
     {
         BusinessSoftwareCheckMode = string.Equals(BusinessSoftwareCheckMode, "StartOnly",
@@ -181,7 +223,7 @@ public partial class SettingsViewModel : ObservableObject
         input.Trim().Equals(BackKey, StringComparison.OrdinalIgnoreCase);
 
     public static bool IsSupportedLanguage(string? code) =>
-        code is "en" or "fr" or "zh" or "he" or "ht";
+        code is "en" or "fr" or "zh" or "he" or "ht" or "ch";
 
     public static string LanguageLabel(string code) => code switch
     {
@@ -190,6 +232,7 @@ public partial class SettingsViewModel : ObservableObject
         "zh" => "中文",
         "he" => "עברית",
         "ht" => "Kreyòl",
+        "ch" => "Ch'ti",
         _    => code
     };
 }

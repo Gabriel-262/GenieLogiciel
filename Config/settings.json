@@ -1,9 +1,9 @@
 {
   "AutoAssignJobId": false,
-  "Language": "fr",
+  "Language": "en",
   "BackKey": "r",
   "LogFormat": "xml",
-  "MaxJobs": 1,
+  "MaxJobs": 10,
   "BusinessSoftwareName": "",
   "BusinessSoftwareCheckMode": "Continuous",
   "LogPath": null,
@@ -20,5 +20,8 @@
   "CryptoSoftPath": null,
   "CryptoPublicKey": null,
   "CryptoPrivateKey": null,
-  "Theme": "dark"
+  "Theme": "dark",
+  "MaxParallelJobs": 4,
+  "MaxParallelFilesPerJob": 4,
+  "LargeFileThresholdKb": 1024
 }

@@ -17,6 +17,7 @@
                         <Button Content="中文"     Click="Lang_Click" Tag="zh"/>
                         <Button Content="עברית"   Click="Lang_Click" Tag="he"/>
                         <Button Content="Kreyòl"  Click="Lang_Click" Tag="ht"/>
+                        <Button Content="Ch'ti"  Click="Lang_Click" Tag="ch"/>
                     </StackPanel>
 
                     <TextBlock Text="{DynamicResource UI_Settings_Theme}" Style="{StaticResource Muted}"/>
@@ -56,6 +57,61 @@
                         <Button Grid.Column="1" Content="{DynamicResource UI_Btn_Save}" Margin="8,0,0,0"
                                 Style="{StaticResource PrimaryButton}"
                                 Click="SaveMaxJobs_Click"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Performance / Multithreading -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="{DynamicResource UI_Settings_Performance}" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                    <TextBlock Style="{StaticResource Muted}"
+                               Text="{DynamicResource UI_Settings_PerformanceDesc}"/>
+
+                    <!-- Max jobs en parallèle -->
+                    <TextBlock Text="{DynamicResource UI_Settings_MaxParallelJobs}" Style="{StaticResource Muted}" Margin="0,12,0,4"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="MaxParallelJobsBox" Grid.Column="0"
+                                 Text="{Binding MaxParallelJobs, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Button Grid.Column="1" Content="{DynamicResource UI_Btn_Save}" Margin="8,0,0,0"
+                                Style="{StaticResource PrimaryButton}"
+                                Command="{Binding ChangeMaxParallelJobsCommand}"
+                                CommandParameter="{Binding Text, ElementName=MaxParallelJobsBox}"/>
+                    </Grid>
+
+                    <!-- Max fichiers en parallèle dans un même job -->
+                    <TextBlock Text="{DynamicResource UI_Settings_MaxParallelFilesPerJob}" Style="{StaticResource Muted}" Margin="0,12,0,4"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="MaxParallelFilesBox" Grid.Column="0"
+                                 Text="{Binding MaxParallelFilesPerJob, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Button Grid.Column="1" Content="{DynamicResource UI_Btn_Save}" Margin="8,0,0,0"
+                                Style="{StaticResource PrimaryButton}"
+                                Command="{Binding ChangeMaxParallelFilesPerJobCommand}"
+                                CommandParameter="{Binding Text, ElementName=MaxParallelFilesBox}"/>
+                    </Grid>
+
+                    <!-- Seuil "gros fichier" en Ko -->
+                    <TextBlock Text="{DynamicResource UI_Settings_LargeFileThreshold}"
+                               Style="{StaticResource Muted}" Margin="0,12,0,4" TextWrapping="Wrap"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="LargeFileThresholdBox" Grid.Column="0"
+                                 Text="{Binding LargeFileThresholdKb, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Button Grid.Column="1" Content="{DynamicResource UI_Btn_Save}" Margin="8,0,0,0"
+                                Style="{StaticResource PrimaryButton}"
+                                Command="{Binding ChangeLargeFileThresholdKbCommand}"
+                                CommandParameter="{Binding Text, ElementName=LargeFileThresholdBox}"/>
                     </Grid>
                 </StackPanel>
             </Border>

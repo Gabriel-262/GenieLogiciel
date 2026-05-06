@@ -33,4 +33,16 @@ public class AppSettings
 
     // v2 (WPF): "light" or "dark". Ignored by the CLI.
     public string Theme { get; set; } = "light";
+
+    // Parallélisme : nombre maximum de jobs exécutés simultanément.
+    public int MaxParallelJobs { get; set; } = 4;
+
+    // Parallélisme : nombre maximum de fichiers copiés simultanément à l'intérieur d'un même job.
+    public int MaxParallelFilesPerJob { get; set; } = 4;
+
+    // Bande passante : taille (en Ko) au-delà de laquelle un fichier est
+    // considéré "gros". Deux fichiers >= ce seuil ne sont jamais copiés en
+    // même temps (sérialisation globale, tous jobs confondus).
+    // 0 = désactivé (pas de sérialisation).
+    public int LargeFileThresholdKb { get; set; } = 1024;
 }

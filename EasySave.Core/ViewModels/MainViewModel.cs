@@ -44,13 +44,13 @@ public partial class MainViewModel : ObservableObject
         UnseenExecutionCount = 0;
     }
 
-    private void OnJobStarted(object? sender, string jobName) => RunOnUi(() =>
+    private void OnJobStarted(object? sender, JobLifecycleEventArgs e) => RunOnUi(() =>
     {
         RunningCount++;
         UnseenExecutionCount++;
     });
 
-    private void OnJobCompleted(object? sender, string jobName) => RunOnUi(() =>
+    private void OnJobCompleted(object? sender, JobLifecycleEventArgs e) => RunOnUi(() =>
     {
         if (RunningCount > 0) RunningCount--;
     });

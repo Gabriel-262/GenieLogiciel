@@ -1,5 +1,5 @@
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using EasySave.Services;
 
 namespace EasySave.ViewModels;
@@ -8,27 +8,23 @@ public partial class JobExecutionViewModel : ObservableObject, IDisposable
 {
     private readonly BackupEngine _engine;
 
-    // SynchronizationContext capturé à la construction = celui du thread UI
-    // (puisque le ViewModel est créé sur ce thread). On l'utilise pour
-    // marshaler tous les handlers d'événements vers le thread UI : sinon,
-    // les modifications d'ObservableProperty depuis un thread de background
-    // lèvent une InvalidOperationException ("le thread appelant ne peut pas
-    // accéder à cet objet parce qu'un autre thread en est propriétaire").
+    // SynchronizationContext capturé à la construction = thread UI. Utilisé
+    // pour marshaler tous les handlers d'events vers l'UI : sans ça, modifier
+    // une ObservableCollection ou une ObservableProperty depuis un thread de
+    // background lèverait InvalidOperationException.
     private readonly SynchronizationContext? _ui;
 
-    [ObservableProperty] private string currentJobName = string.Empty;
-    [ObservableProperty] private string currentSourceFile = string.Empty;
-    [ObservableProperty] private string currentDestinationFile = string.Empty;
-    [ObservableProperty] private int totalFiles;
-    [ObservableProperty] private int processedFiles;
-    [ObservableProperty] private long totalSizeBytes;
-    [ObservableProperty] private long bytesDone;
-    [ObservableProperty] private double progressPercent;
-    [ObservableProperty] private bool isRunning;
+    // Une ligne par job en cours d'exécution (ajoutée à JobStarted, retirée à
+    // JobCompleted). Permet d'afficher la progression de N jobs en parallèle.
+    public ObservableCollection<JobProgressItemViewModel> Jobs { get; } = new();
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(ResumeCommand))]
-    private bool isPaused;
+    [NotifyPropertyChangedFor(nameof(IsAnyRunning))]
+    [NotifyPropertyChangedFor(nameof(IsAnyPaused))]
+    private int dummyCounter; // usé seulement pour forcer la propagation aux propriétés calculées
+
+    public bool IsAnyRunning => Jobs.Any(j => j.IsRunning);
+    public bool IsAnyPaused => Jobs.Any(j => j.IsPaused);
 
     public JobExecutionViewModel(BackupEngine engine)
     {
@@ -42,70 +38,80 @@ public partial class JobExecutionViewModel : ObservableObject, IDisposable
         _engine.JobResumed += OnJobResumed;
     }
 
-    // ------------------------------------------------------------------------
-    // RunOnUi : exécute l'action sur le thread UI (capture si nécessaire).
-    // Si on est déjà sur le thread UI ou pas de context capturé → exécution directe.
-    // ------------------------------------------------------------------------
     private void RunOnUi(Action action)
     {
-        if (_ui is null || SynchronizationContext.Current == _ui)
-        {
-            action();
-        }
-        else
-        {
-            _ui.Post(_ => action(), null);
-        }
+        if (_ui is null || SynchronizationContext.Current == _ui) action();
+        else _ui.Post(_ => action(), null);
     }
 
-    private void OnJobStarted(object? sender, string jobName) => RunOnUi(() =>
+    private JobProgressItemViewModel? FindOrAdd(int jobId, string jobName, bool addIfMissing)
     {
-        CurrentJobName = jobName;
-        IsRunning = true;
-        IsPaused = false;
-        ProgressPercent = 0;
-        ProcessedFiles = 0;
-        BytesDone = 0;
+        var item = Jobs.FirstOrDefault(j => j.JobId == jobId);
+        if (item is null && addIfMissing)
+        {
+            item = new JobProgressItemViewModel(jobId, jobName, _engine.Resume);
+            Jobs.Add(item);
+        }
+        return item;
+    }
+
+    private void NotifyAggregates()
+    {
+        OnPropertyChanged(nameof(IsAnyRunning));
+        OnPropertyChanged(nameof(IsAnyPaused));
+    }
+
+    private void OnJobStarted(object? sender, JobLifecycleEventArgs e) => RunOnUi(() =>
+    {
+        var item = FindOrAdd(e.JobId, e.JobName, addIfMissing: true)!;
+        item.JobName = e.JobName;
+        item.IsRunning = true;
+        item.IsPaused = false;
+        item.ProgressPercent = 0;
+        item.ProcessedFiles = 0;
+        item.BytesDone = 0;
+        NotifyAggregates();
     });
 
-    private void OnJobCompleted(object? sender, string jobName) => RunOnUi(() =>
+    private void OnJobCompleted(object? sender, JobLifecycleEventArgs e) => RunOnUi(() =>
     {
-        IsRunning = false;
-        IsPaused = false;
-        ProgressPercent = 100;
+        var item = FindOrAdd(e.JobId, e.JobName, addIfMissing: false);
+        if (item is not null)
+        {
+            item.IsRunning = false;
+            item.IsPaused = false;
+            item.ProgressPercent = 100;
+            Jobs.Remove(item);
+        }
+        NotifyAggregates();
     });
 
     private void OnProgressChanged(object? sender, BackupProgressEventArgs e) => RunOnUi(() =>
     {
-        CurrentJobName = e.JobName;
-        CurrentSourceFile = e.CurrentSourceFile;
-        CurrentDestinationFile = e.CurrentDestinationFile;
-        TotalFiles = e.TotalFiles;
-        ProcessedFiles = e.ProcessedFiles;
-        TotalSizeBytes = e.TotalSizeBytes;
-        BytesDone = e.BytesDone;
-        ProgressPercent = e.ProgressPercent;
+        var item = FindOrAdd(e.JobId, e.JobName, addIfMissing: true)!;
+        item.JobName = e.JobName;
+        item.CurrentSourceFile = e.CurrentSourceFile;
+        item.CurrentDestinationFile = e.CurrentDestinationFile;
+        item.TotalFiles = e.TotalFiles;
+        item.ProcessedFiles = e.ProcessedFiles;
+        item.TotalSizeBytes = e.TotalSizeBytes;
+        item.BytesDone = e.BytesDone;
+        item.ProgressPercent = e.ProgressPercent;
     });
 
-    private void OnJobPaused(object? sender, string jobName) => RunOnUi(() =>
+    private void OnJobPaused(object? sender, JobLifecycleEventArgs e) => RunOnUi(() =>
     {
-        CurrentJobName = jobName;
-        IsPaused = true;
+        var item = FindOrAdd(e.JobId, e.JobName, addIfMissing: true)!;
+        item.IsPaused = true;
+        NotifyAggregates();
     });
 
-    private void OnJobResumed(object? sender, string jobName) => RunOnUi(() =>
+    private void OnJobResumed(object? sender, JobLifecycleEventArgs e) => RunOnUi(() =>
     {
-        CurrentJobName = jobName;
-        IsPaused = false;
+        var item = FindOrAdd(e.JobId, e.JobName, addIfMissing: false);
+        if (item is not null) item.IsPaused = false;
+        NotifyAggregates();
     });
-
-    [RelayCommand(CanExecute = nameof(CanResume))]
-    private void Resume()
-    {
-        _engine.Resume();
-    }
-
-    private bool CanResume() => IsPaused;
 
     public void Dispose()
     {
