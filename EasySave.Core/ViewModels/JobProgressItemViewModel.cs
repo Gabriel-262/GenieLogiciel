@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using EasySave.Services;
 
 namespace EasySave.ViewModels;
 
@@ -17,23 +18,63 @@ public partial class JobProgressItemViewModel : ObservableObject
     [ObservableProperty] private long totalSizeBytes;
     [ObservableProperty] private long bytesDone;
     [ObservableProperty] private double progressPercent;
-    [ObservableProperty] private bool isRunning = true;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(PauseCommand))]
+    [NotifyCanExecuteChangedFor(nameof(StopCommand))]
+    private bool isRunning = true;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ResumeCommand))]
+    [NotifyCanExecuteChangedFor(nameof(PauseCommand))]
     private bool isPaused;
 
-    private readonly Action<int> _resumeAction;
+    // Cause courante de la pause ; null = pas en pause.
+    [ObservableProperty] private PauseReason? pauseReason;
 
-    public JobProgressItemViewModel(int jobId, string jobName, Action<int> resumeAction)
+    // Vrai uniquement pour les pauses "subies" (logiciel métier ou fichier
+    // verrouillé). La pause utilisateur n'affiche aucun bandeau d'erreur.
+    public bool IsPausedForError =>
+        IsPaused && PauseReason is Services.PauseReason.Business or Services.PauseReason.FileLocked;
+
+    public string ErrorMessage => PauseReason switch
+    {
+        Services.PauseReason.Business   => "Logiciel métier détecté — la sauvegarde reprendra automatiquement à sa fermeture.",
+        Services.PauseReason.FileLocked => "Fichier verrouillé par une autre application — reprise automatique dès libération.",
+        _ => string.Empty
+    };
+
+    partial void OnPauseReasonChanged(PauseReason? value)
+    {
+        OnPropertyChanged(nameof(IsPausedForError));
+        OnPropertyChanged(nameof(ErrorMessage));
+    }
+    partial void OnIsPausedChanged(bool value)
+        => OnPropertyChanged(nameof(IsPausedForError));
+
+    private readonly Action<int> _pauseAction;
+    private readonly Action<int> _resumeAction;
+    private readonly Action<int> _stopAction;
+
+    public JobProgressItemViewModel(int jobId, string jobName,
+        Action<int> pauseAction, Action<int> resumeAction, Action<int> stopAction)
     {
         JobId = jobId;
         this.jobName = jobName;
+        _pauseAction = pauseAction;
         _resumeAction = resumeAction;
+        _stopAction = stopAction;
     }
+
+    [RelayCommand(CanExecute = nameof(CanPause))]
+    private void Pause() => _pauseAction(JobId);
+    private bool CanPause() => IsRunning && !IsPaused;
 
     [RelayCommand(CanExecute = nameof(CanResume))]
     private void Resume() => _resumeAction(JobId);
-
     private bool CanResume() => IsPaused;
+
+    [RelayCommand(CanExecute = nameof(CanStop))]
+    private void Stop() => _stopAction(JobId);
+    private bool CanStop() => IsRunning;
 }

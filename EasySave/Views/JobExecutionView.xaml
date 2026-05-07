@@ -7,12 +7,39 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0" Text="{DynamicResource UI_Exec_Title}" Style="{StaticResource H1}"/>
 
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+        <!-- Bandeau global d'alerte logiciel métier (visible uniquement si détecté) -->
+        <Border Grid.Row="1"
+                Background="#C0392B"
+                CornerRadius="6"
+                Padding="14,10"
+                Margin="0,8,0,8"
+                Visibility="{Binding HasBusinessSoftwareAlert, Converter={StaticResource BoolToVis}}">
+            <TextBlock Text="{Binding BusinessSoftwareAlert}"
+                       Foreground="White" FontWeight="Bold" FontSize="14"
+                       TextWrapping="Wrap"/>
+        </Border>
+
+        <!-- Barre de contrôle globale : Tout pause / Tout play / Tout stop -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,4,0,12">
+            <Button Content="⏸ Tout mettre en pause"
+                    Command="{Binding PauseAllCommand}"
+                    Padding="14,6" Margin="0,0,8,0"/>
+            <Button Content="▶ Tout reprendre"
+                    Command="{Binding ResumeAllCommand}"
+                    Padding="14,6" Margin="0,0,8,0"/>
+            <Button Content="⏹ Tout arrêter"
+                    Command="{Binding StopAllCommand}"
+                    Padding="14,6"/>
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto">
             <StackPanel>
                 <!-- Une carte par job en cours d'exécution -->
                 <ItemsControl ItemsSource="{Binding Jobs}">
@@ -20,36 +47,38 @@
                         <DataTemplate>
                             <Border Style="{StaticResource Card}" Margin="0,0,0,12">
                                 <StackPanel>
-                                    <!-- Bandeau pause par job -->
+                                    <!-- Bandeau d'erreur : visible UNIQUEMENT pour les pauses
+                                         "subies" (logiciel métier ou fichier verrouillé).
+                                         Pas de bandeau pour une pause manuelle utilisateur. -->
                                     <Border Background="#E67E22"
                                             CornerRadius="6"
                                             Padding="14,10"
                                             Margin="0,0,0,12"
-                                            Visibility="{Binding IsPaused, Converter={StaticResource BoolToVis}}">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            <StackPanel Grid.Column="0">
-                                                <TextBlock Text="⏸  Sauvegarde en pause"
-                                                           Foreground="White" FontWeight="Bold" FontSize="14"/>
-                                                <TextBlock Text="Fichier verrouillé ou logiciel métier détecté. Cliquez sur Reprendre quand c'est libre."
-                                                           Foreground="White" Margin="0,4,0,0" TextWrapping="Wrap"/>
-                                            </StackPanel>
-                                            <Button Grid.Column="1"
-                                                    Content="▶ Reprendre"
-                                                    Command="{Binding ResumeCommand}"
-                                                    Padding="14,6"
-                                                    Margin="12,0,0,0"
-                                                    FontWeight="Bold"
-                                                    VerticalAlignment="Center"/>
-                                        </Grid>
+                                            Visibility="{Binding IsPausedForError, Converter={StaticResource BoolToVis}}">
+                                        <StackPanel>
+                                            <TextBlock Text="⏸  Sauvegarde en pause"
+                                                       Foreground="White" FontWeight="Bold" FontSize="14"/>
+                                            <TextBlock Text="{Binding ErrorMessage}"
+                                                       Foreground="White" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                                        </StackPanel>
                                     </Border>
 
                                     <TextBlock Text="{DynamicResource UI_Exec_CurrentJob}" Style="{StaticResource Muted}"/>
                                     <TextBlock Text="{Binding JobName, FallbackValue='—'}"
                                                FontSize="16" FontWeight="SemiBold" Margin="0,4,0,12"/>
+
+                                    <!-- Contrôles par job : Pause / Reprendre / Stop -->
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                        <Button Content="⏸ Pause"
+                                                Command="{Binding PauseCommand}"
+                                                Padding="12,4" Margin="0,0,8,0"/>
+                                        <Button Content="▶ Reprendre"
+                                                Command="{Binding ResumeCommand}"
+                                                Padding="12,4" Margin="0,0,8,0"/>
+                                        <Button Content="⏹ Stop"
+                                                Command="{Binding StopCommand}"
+                                                Padding="12,4"/>
+                                    </StackPanel>
 
                                     <ProgressBar Value="{Binding ProgressPercent}" Maximum="100" Margin="0,0,0,8"/>
                                     <TextBlock Margin="0,0,0,12">

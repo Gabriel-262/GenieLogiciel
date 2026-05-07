@@ -10,6 +10,13 @@ public partial class App : Application
 {
     public static MainViewModel MainViewModel { get; private set; } = null!;
     public static SettingsService SettingsService { get; private set; } = null!;
+    private static BusinessSoftwareWatcher? _businessWatcher;
+
+    protected override void OnExit(ExitEventArgs e)
+    {
+        _businessWatcher?.Dispose();
+        base.OnExit(e);
+    }
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -43,6 +50,13 @@ public partial class App : Application
             businessMonitor: businessMonitor,
             crypto: crypto,
             settings: settingsService);
+
+        // Watcher en tâche de fond : détecte le lancement/fermeture du logiciel
+        // métier indépendamment du flux de copie. À chaque transition, il
+        // pause / reprend tous les jobs actifs (cause "Business").
+        _businessWatcher = new BusinessSoftwareWatcher(businessMonitor, intervalMs: 1000);
+        _businessWatcher.Started += (_, _) => engine.PauseAllForBusinessSoftware();
+        _businessWatcher.Stopped += (_, _) => engine.ResumeAllAfterBusinessSoftware();
 
         SettingsService = settingsService;
         MainViewModel = new MainViewModel(repo, engine, settingsService);

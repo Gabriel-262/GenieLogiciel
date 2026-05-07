@@ -4,7 +4,7 @@ public enum LogAction
 {
     Create, Update, Delete, JobUpdated, JobDeleted, BusinessSoftwareDetected,
     // Entrées de synthèse multithreading émises au début et à la fin d'un job.
-    JobStarted, JobCompleted
+    JobStarted, JobCompleted, JobStopped
 }
 
 public class LogEntry
