@@ -294,37 +294,53 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="160"/>
                             <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}"
                                    Text="Journaux" VerticalAlignment="Center" Margin="0"/>
                         <TextBox Grid.Column="1" Text="{Binding LogPath, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Button Grid.Column="2" Content="..." MinWidth="42" Margin="8,0,0,0"
+                                ToolTip="Parcourir"
+                                Tag="Log" Click="BrowsePath_Click"/>
                     </Grid>
                     <Grid Style="{StaticResource SettingRow}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="160"/>
                             <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}"
                                    Text="État" VerticalAlignment="Center" Margin="0"/>
                         <TextBox Grid.Column="1" Text="{Binding StatePath, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Button Grid.Column="2" Content="..." MinWidth="42" Margin="8,0,0,0"
+                                ToolTip="Parcourir"
+                                Tag="State" Click="BrowsePath_Click"/>
                     </Grid>
                     <Grid Style="{StaticResource SettingRow}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="160"/>
                             <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}"
                                    Text="Config" VerticalAlignment="Center" Margin="0"/>
                         <TextBox Grid.Column="1" Text="{Binding ConfigPath, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Button Grid.Column="2" Content="..." MinWidth="42" Margin="8,0,0,0"
+                                ToolTip="Parcourir"
+                                Tag="Config" Click="BrowsePath_Click"/>
                     </Grid>
                     <Grid Style="{StaticResource SettingRow}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="160"/>
                             <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}"
                                    Text="Langue" VerticalAlignment="Center" Margin="0"/>
                         <TextBox Grid.Column="1" Text="{Binding LangPath, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Button Grid.Column="2" Content="..." MinWidth="42" Margin="8,0,0,0"
+                                ToolTip="Parcourir"
+                                Tag="Lang" Click="BrowsePath_Click"/>
                     </Grid>
 
                     <Button Content="Enregistrer les chemins"

@@ -12,6 +12,7 @@ public partial class MainViewModel : ObservableObject
     public JobFormViewModel JobForm { get; }
     public SettingsViewModel Settings { get; }
     public JobExecutionViewModel Execution { get; }
+    public LogsViewModel Logs { get; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsAnyJobRunning))]
@@ -35,6 +36,7 @@ public partial class MainViewModel : ObservableObject
         JobForm = new JobFormViewModel(repo);
         Settings = new SettingsViewModel(settings);
         Execution = new JobExecutionViewModel(engine);
+        Logs = new LogsViewModel();
 
         engine.JobStarted += OnJobStarted;
         engine.JobCompleted += OnJobCompleted;

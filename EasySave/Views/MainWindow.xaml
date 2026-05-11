@@ -56,6 +56,9 @@
                     <Button Style="{StaticResource NavButton}" Click="NavJobs_Click">
                         <TextBlock Text="{DynamicResource UI_Sidebar_Jobs}"/>
                     </Button>
+                    <Button Style="{StaticResource NavButton}" Click="NavLogs_Click">
+                        <TextBlock Text="Journaux"/>
+                    </Button>
                     <Button Style="{StaticResource NavButton}" Click="NavSettings_Click">
                         <TextBlock Text="{DynamicResource UI_Sidebar_Settings}"/>
                     </Button>

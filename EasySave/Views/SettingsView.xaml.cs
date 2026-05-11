@@ -55,6 +55,20 @@ public partial class SettingsView : UserControl
         }
     }
 
+    private void BrowsePath_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button b || b.Tag is not string which) return;
+        string? path = FolderPicker.Pick();
+        if (path is null) return;
+        switch (which)
+        {
+            case "Log":    Vm.LogPath    = path; break;
+            case "State":  Vm.StatePath  = path; break;
+            case "Config": Vm.ConfigPath = path; break;
+            case "Lang":   Vm.LangPath   = path; break;
+        }
+    }
+
     private void SavePaths_Click(object sender, RoutedEventArgs e)
     {
         Vm.ChangeLogPathCommand.Execute(Vm.LogPath);
