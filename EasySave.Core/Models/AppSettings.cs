@@ -45,4 +45,10 @@ public class AppSettings
     // même temps (sérialisation globale, tous jobs confondus).
     // 0 = désactivé (pas de sérialisation).
     public int LargeFileThresholdKb { get; set; } = 1024;
+
+    // === Champs CLIENT uniquement (ignorés côté serveur) ===
+    // Dernière IP/port utilisés pour se connecter au serveur. Si 127.0.0.1
+    // répond au démarrage, ces valeurs ne sont pas consultées.
+    public string? RemoteServerHost { get; set; }
+    public int? RemoteServerPort { get; set; }
 }

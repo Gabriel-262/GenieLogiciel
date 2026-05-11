@@ -7,7 +7,7 @@ namespace EasySave.ViewModels;
 
 public partial class JobExecutionViewModel : ObservableObject, IDisposable
 {
-    private readonly BackupEngine _engine;
+    private readonly IBackupEngine _engine;
     private readonly SynchronizationContext? _ui;
 
     // Une ligne par job en cours. Mise à jour via les events de l'engine
@@ -26,7 +26,7 @@ public partial class JobExecutionViewModel : ObservableObject, IDisposable
     partial void OnBusinessSoftwareAlertChanged(string value)
         => OnPropertyChanged(nameof(HasBusinessSoftwareAlert));
 
-    public JobExecutionViewModel(BackupEngine engine)
+    public JobExecutionViewModel(IBackupEngine engine)
     {
         _engine = engine;
         _ui = SynchronizationContext.Current;

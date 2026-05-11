@@ -9,7 +9,7 @@ public enum JobFormMode { Create, Edit }
 
 public partial class JobFormViewModel : ObservableObject
 {
-    private readonly JobRepository _repo;
+    private readonly IJobRepository _repo;
 
     [ObservableProperty] private JobFormMode mode;
     [ObservableProperty] private int id;
@@ -34,7 +34,7 @@ public partial class JobFormViewModel : ObservableObject
 
     [ObservableProperty] private BackupType type = BackupType.Full;
 
-    public JobFormViewModel(JobRepository repo)
+    public JobFormViewModel(IJobRepository repo)
     {
         _repo = repo;
     }

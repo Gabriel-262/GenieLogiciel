@@ -5,7 +5,7 @@ using EasySave.Models;
 
 namespace EasySave.Services;
 
-public class BackupEngine
+public class BackupEngine : IBackupEngine
 {
     private readonly JobRepository _repo;
     private readonly ILogger _logger;

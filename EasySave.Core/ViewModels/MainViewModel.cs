@@ -24,8 +24,8 @@ public partial class MainViewModel : ObservableObject
     public bool IsExecutionBadgeVisible => UnseenExecutionCount > 0;
 
     public MainViewModel(
-        JobRepository repo,
-        BackupEngine engine,
+        IJobRepository repo,
+        IBackupEngine engine,
         SettingsService settings)
     {
         _ui = SynchronizationContext.Current;

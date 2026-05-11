@@ -7,12 +7,12 @@ namespace EasySave.ViewModels;
 
 public partial class JobListViewModel : ObservableObject
 {
-    private readonly JobRepository _repo;
-    private readonly BackupEngine _engine;
+    private readonly IJobRepository _repo;
+    private readonly IBackupEngine _engine;
 
     [ObservableProperty] private ObservableCollection<JobItemViewModel> jobs = new();
 
-    public JobListViewModel(JobRepository repo, BackupEngine engine)
+    public JobListViewModel(IJobRepository repo, IBackupEngine engine)
     {
         _repo = repo;
         _engine = engine;

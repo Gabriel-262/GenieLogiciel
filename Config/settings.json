@@ -23,5 +23,7 @@
   "Theme": "dark",
   "MaxParallelJobs": 4,
   "MaxParallelFilesPerJob": 4,
-  "LargeFileThresholdKb": 1024
+  "LargeFileThresholdKb": 1024,
+  "RemoteServerHost": null,
+  "RemoteServerPort": null
 }

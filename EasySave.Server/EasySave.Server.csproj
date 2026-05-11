@@ -3,16 +3,17 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
-    <RootNamespace>EasySave</RootNamespace>
-    <AssemblyName>EasySave.Cli</AssemblyName>
+    <RootNamespace>EasySave.Server</RootNamespace>
+    <AssemblyName>EasySave.Server</AssemblyName>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\EasyLog\EasyLog.csproj" />
     <ProjectReference Include="..\EasySave.Core\EasySave.Core.csproj" />
-    <ProjectReference Include="..\EasySave.Client\EasySave.Client.csproj" />
+    <ProjectReference Include="..\EasySave.Protocol\EasySave.Protocol.csproj" />
   </ItemGroup>
 
 </Project>
