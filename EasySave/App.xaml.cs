@@ -23,6 +23,12 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        // Pendant le bootstrap (prompt IP, connexion async), aucune fenêtre
+        // principale n'est encore ouverte. Sans ce mode explicite, fermer la
+        // boîte de dialogue de saisie d'IP déclenche un OnLastWindowClose et
+        // tue l'appli avant qu'on ait pu afficher la MainWindow.
+        ShutdownMode = ShutdownMode.OnExplicitShutdown;
+
         // === Bootstrap CLIENT (UI/locale uniquement) ===
         var pathService     = new PathService();
         var settingsService = new SettingsService(pathService);
@@ -58,6 +64,8 @@ public partial class App : Application
         // (StartupUri retiré d'App.xaml pour pouvoir attendre la connexion.)
         var main = new Views.MainWindow();
         MainWindow = main;
+        // On rebascule sur le comportement standard : fermer la MainWindow ferme l'appli.
+        ShutdownMode = ShutdownMode.OnMainWindowClose;
         main.Show();
     }
 
