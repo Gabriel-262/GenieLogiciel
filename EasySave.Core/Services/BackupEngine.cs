@@ -20,6 +20,12 @@ public class BackupEngine : IBackupEngine
     // Sérialise globalement la copie des fichiers >= LargeFileThresholdKb.
     private readonly SemaphoreSlim _largeFileGate = new(1, 1);
 
+    // Gate global pour les extensions prioritaires : tant que _priorityPending
+    // > 0 (au moins un fichier prioritaire reste à traiter sur n'importe quel
+    // job actif), aucun fichier non prioritaire ne peut être copié.
+    private int _priorityPending;
+    private readonly ManualResetEventSlim _noPriorityPending = new(true);
+
     private const int CopyBufferSize = 64 * 1024;
 
     public BackupEngine(JobRepository repo, ILogger logger,
@@ -196,10 +202,39 @@ public class BackupEngine : IBackupEngine
                 ThreadId = Environment.CurrentManagedThreadId
             });
 
+            // Partition prioritaires / non-prioritaires. Les prioritaires sont
+            // traités d'abord ; les non-prioritaires attendent que la file
+            // GLOBALE (tous jobs confondus) de fichiers prioritaires soit vide.
+            var priorityFiles = new List<FileInfo>();
+            var normalFiles = new List<FileInfo>();
+            foreach (var f in files)
             {
-                Parallel.ForEach(files, parallelOptions, sourceFile =>
+                if (IsPriority(f.FullName)) priorityFiles.Add(f);
+                else normalFiles.Add(f);
+            }
+
+            int priorityTotal = priorityFiles.Count;
+            if (priorityTotal > 0)
+            {
+                Interlocked.Add(ref _priorityPending, priorityTotal);
+                _noPriorityPending.Reset();
+            }
+            int priorityDone = 0;
+
+            void ProcessFile(FileInfo sourceFile, bool isPriority)
+            {
+                try
                 {
                     if (controller.IsStopRequested) return;
+
+                    // Gate global : un fichier non prioritaire ne démarre pas
+                    // tant qu'il reste des prioritaires en attente.
+                    if (!isPriority)
+                    {
+                        try { _noPriorityPending.Wait(controller.StopToken); }
+                        catch (OperationCanceledException) { return; }
+                        if (controller.IsStopRequested) return;
+                    }
 
                     int tid = Environment.CurrentManagedThreadId;
                     threadsUsed.TryAdd(tid, 0);
@@ -280,7 +315,46 @@ public class BackupEngine : IBackupEngine
                     long bytesSnap = Interlocked.Add(ref bytesDone, sourceFile.Length);
                     PushProgress(job, sourceFile.FullName, destination,
                         processedSnap, totalFiles, bytesSnap, totalSize);
-                });
+                }
+                finally
+                {
+                    if (isPriority)
+                    {
+                        Interlocked.Increment(ref priorityDone);
+                        if (Interlocked.Decrement(ref _priorityPending) == 0)
+                            _noPriorityPending.Set();
+                    }
+                }
+            }
+
+            try
+            {
+                if (priorityTotal > 0)
+                    Parallel.ForEach(priorityFiles, parallelOptions, f => ProcessFile(f, true));
+
+                // Filet de sécurité : si on est sorti tôt (stop), les compteurs
+                // restants doivent être rendus au gate global pour ne pas bloquer
+                // les autres jobs.
+                int leftover = priorityTotal - Volatile.Read(ref priorityDone);
+                if (leftover > 0)
+                {
+                    if (Interlocked.Add(ref _priorityPending, -leftover) == 0)
+                        _noPriorityPending.Set();
+                }
+
+                if (!controller.IsStopRequested && normalFiles.Count > 0)
+                    Parallel.ForEach(normalFiles, parallelOptions, f => ProcessFile(f, false));
+            }
+            finally
+            {
+                // En cas d'exception inattendue, on s'assure de ne pas avoir
+                // laissé de crédit prioritaire fantôme.
+                int residual = priorityTotal - Volatile.Read(ref priorityDone);
+                if (residual > 0)
+                {
+                    if (Interlocked.Add(ref _priorityPending, -residual) <= 0)
+                        _noPriorityPending.Set();
+                }
             }
             stopped = controller.IsStopRequested;
 
@@ -413,6 +487,16 @@ public class BackupEngine : IBackupEngine
             BytesDone = bytesDone,
             ProgressPercent = percent
         });
+    }
+
+    private bool IsPriority(string sourceFilePath)
+    {
+        var extensions = _settings?.Current.PriorityExtensions;
+        if (extensions is null || extensions.Count == 0) return false;
+        string ext = Path.GetExtension(sourceFilePath);
+        if (string.IsNullOrEmpty(ext)) return false;
+        return extensions.Any(e => string.Equals(
+            NormalizeExtension(e), ext, StringComparison.OrdinalIgnoreCase));
     }
 
     private bool ShouldEncrypt(string sourceFilePath)

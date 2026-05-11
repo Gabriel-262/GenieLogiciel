@@ -15,6 +15,7 @@
     ".docx",
     ".pdf"
   ],
+  "PriorityExtensions": [],
   "CryptoMode": "Standard",
   "CryptoKey": "CryptoSoft",
   "CryptoSoftPath": null,

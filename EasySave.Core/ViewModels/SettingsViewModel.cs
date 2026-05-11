@@ -29,6 +29,7 @@ public partial class SettingsViewModel : ObservableObject
         businessSoftwareCheckMode = string.IsNullOrEmpty(settings.Current.BusinessSoftwareCheckMode)
             ? "StartOnly" : settings.Current.BusinessSoftwareCheckMode;
         EncryptedExtensions = new ObservableCollection<string>(settings.Current.EncryptedExtensions);
+        PriorityExtensions = new ObservableCollection<string>(settings.Current.PriorityExtensions);
     }
 
     [ObservableProperty]
@@ -50,6 +51,7 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private string businessSoftwareCheckMode;
 
     public ObservableCollection<string> EncryptedExtensions { get; }
+    public ObservableCollection<string> PriorityExtensions { get; }
 
     public string LanguageDisplayName => LanguageLabel(Language);
 
@@ -207,6 +209,33 @@ public partial class SettingsViewModel : ObservableObject
         EncryptedExtensions.Remove(match);
         _settings.Current.EncryptedExtensions = EncryptedExtensions.ToList();
         _settings.Save();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanAddExtension))]
+    private void AddPriorityExtension(string extension)
+    {
+        string normalized = NormalizeExtension(extension);
+        if (string.IsNullOrEmpty(normalized)) return;
+        if (PriorityExtensions.Any(e => string.Equals(e, normalized, StringComparison.OrdinalIgnoreCase))) return;
+
+        PriorityExtensions.Add(normalized);
+        _settings.Current.PriorityExtensions = PriorityExtensions.ToList();
+        _settings.Save();
+        AppConfig.Settings = _settings.Current;
+    }
+
+    [RelayCommand]
+    private void RemovePriorityExtension(string extension)
+    {
+        string normalized = NormalizeExtension(extension);
+        var match = PriorityExtensions.FirstOrDefault(e =>
+            string.Equals(e, normalized, StringComparison.OrdinalIgnoreCase));
+        if (match is null) return;
+
+        PriorityExtensions.Remove(match);
+        _settings.Current.PriorityExtensions = PriorityExtensions.ToList();
+        _settings.Save();
+        AppConfig.Settings = _settings.Current;
     }
 
     private static string NormalizeExtension(string ext)

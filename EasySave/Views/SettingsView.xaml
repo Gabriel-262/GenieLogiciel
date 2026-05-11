@@ -198,6 +198,52 @@
                 </StackPanel>
             </Border>
 
+            <!-- Priority extensions -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="{DynamicResource UI_Settings_Priority}" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                    <TextBlock Style="{StaticResource Muted}" TextWrapping="Wrap"
+                               Text="{DynamicResource UI_Settings_PriorityDesc}"/>
+
+                    <TextBlock Text="{DynamicResource UI_Settings_Extensions}" Style="{StaticResource Muted}" Margin="0,12,0,4"/>
+                    <ItemsControl ItemsSource="{Binding PriorityExtensions}" Margin="0,0,0,8">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Margin="0,0,6,6" Padding="8,4" CornerRadius="4"
+                                        Background="{DynamicResource SurfaceBrush}"
+                                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
+                                        <Button Content="x" Margin="6,0,0,0" Padding="4,0"
+                                                Command="{Binding DataContext.RemovePriorityExtensionCommand,
+                                                                  RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"/>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="NewPriorityExtensionBox" Grid.Column="0"
+                                 Tag="e.g. .docx"/>
+                        <Button Grid.Column="1" Content="{DynamicResource UI_Btn_Add}" Margin="8,0,0,0"
+                                Style="{StaticResource PrimaryButton}"
+                                Command="{Binding AddPriorityExtensionCommand}"
+                                CommandParameter="{Binding Text, ElementName=NewPriorityExtensionBox}"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
             <!-- Paths -->
             <Border Style="{StaticResource Card}">
                 <StackPanel>
