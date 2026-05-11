@@ -31,7 +31,7 @@
   "Prompt_BackHint": "(press '{0}' to go back)",
   "Prompt_NewBackKey": "New back key (single letter): ",
 
-  "Type_Full": "Full backup",
+  "Type_Full": "Complete backup",
   "Type_Differential": "Differential backup",
 
   "Language_Changed": "Language changed successfully.",
@@ -93,7 +93,7 @@
   "UI_Exec_Status": "Status",
   "UI_Exec_Running": "Running: ",
 
-  "UI_Form_Type_Full": "Full",
+  "UI_Form_Type_Full": "Complete",
   "UI_Form_Type_Differential": "Differential",
   "UI_Form_Valid": "Valid: ",
 
