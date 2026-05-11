@@ -14,6 +14,7 @@ public sealed class RemoteBackupEngine : IBackupEngine
 {
     private readonly BackupServerConnection _conn;
     private readonly HashSet<int> _activeJobIds = new();
+    private readonly HashSet<int> _pausedJobIds = new();
     private readonly object _activeLock = new();
 
     public RemoteBackupEngine(BackupServerConnection conn)
@@ -31,10 +32,10 @@ public sealed class RemoteBackupEngine : IBackupEngine
 
     public bool IsJobPaused(int jobId)
     {
-        // Approximation : on ne suit pas l'état Paused localement (besoin
-        // détaillé pas encore exigé par les VMs). À enrichir si nécessaire
-        // en cachant la dernière transition Paused/Resumed par jobId.
-        return false;
+        // Cache local alimenté par les events JobPaused/JobResumed broadcast
+        // par le serveur. Approximatif au sens où il y a un délai réseau,
+        // mais cohérent avec l'UI qui consomme aussi ces events.
+        lock (_activeLock) return _pausedJobIds.Contains(jobId);
     }
 
     public IReadOnlyCollection<int> ActiveJobIds
@@ -95,7 +96,11 @@ public sealed class RemoteBackupEngine : IBackupEngine
             case MessageTypes.EvtJobCompleted:
                 if (env.TryDecode<JobLifecycleDto>() is { } jc)
                 {
-                    lock (_activeLock) _activeJobIds.Remove(jc.JobId);
+                    lock (_activeLock)
+                    {
+                        _activeJobIds.Remove(jc.JobId);
+                        _pausedJobIds.Remove(jc.JobId);
+                    }
                     JobCompleted?.Invoke(this, jc.ToEventArgs());
                 }
                 break;
@@ -103,19 +108,29 @@ public sealed class RemoteBackupEngine : IBackupEngine
             case MessageTypes.EvtJobStopped:
                 if (env.TryDecode<JobLifecycleDto>() is { } jx)
                 {
-                    lock (_activeLock) _activeJobIds.Remove(jx.JobId);
+                    lock (_activeLock)
+                    {
+                        _activeJobIds.Remove(jx.JobId);
+                        _pausedJobIds.Remove(jx.JobId);
+                    }
                     JobStopped?.Invoke(this, jx.ToEventArgs());
                 }
                 break;
 
             case MessageTypes.EvtJobPaused:
                 if (env.TryDecode<JobLifecycleDto>() is { } jp)
+                {
+                    lock (_activeLock) _pausedJobIds.Add(jp.JobId);
                     JobPaused?.Invoke(this, jp.ToEventArgs());
+                }
                 break;
 
             case MessageTypes.EvtJobResumed:
                 if (env.TryDecode<JobLifecycleDto>() is { } jr)
+                {
+                    lock (_activeLock) _pausedJobIds.Remove(jr.JobId);
                     JobResumed?.Invoke(this, jr.ToEventArgs());
+                }
                 break;
         }
     }
@@ -126,6 +141,7 @@ public sealed class RemoteBackupEngine : IBackupEngine
         lock (_activeLock)
         {
             _activeJobIds.Clear();
+            _pausedJobIds.Clear();
             foreach (var id in snapshot.ActiveJobIds) _activeJobIds.Add(id);
         }
         await Task.CompletedTask;

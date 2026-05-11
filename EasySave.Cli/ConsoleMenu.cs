@@ -85,7 +85,7 @@ public class ConsoleMenu
         _vm.JobList.Refresh();
         if (_vm.JobList.IsFull)
         {
-            Console.WriteLine(string.Format(Translator.Get("Error_MaxJobs"), AppConfig.MaxJobs));
+            Console.WriteLine(string.Format(Translator.Get("Error_MaxJobs"), _vm.JobList.MaxJobs));
             Wait();
             return;
         }

@@ -7,8 +7,10 @@ namespace EasySave.Services;
 //   - JobRepository           : lecture/écriture locale du jobs.json (côté serveur).
 //   - RemoteJobRepository     : forwarde les commandes CRUD via TCP (côté client).
 //
-// L'API "état runtime" (UpdateState / ClearState) reste interne à JobRepository :
-// seul le moteur côté serveur en a besoin, donc elle ne traverse pas le réseau.
+// Les lectures sont servies depuis un cache local (instantanées) -> sync OK.
+// Les écritures côté Remote font un aller-retour réseau -> versions async pour
+// ne pas bloquer le thread UI. Les versions sync sont conservées pour la CLI
+// et le serveur (où elles n'ont pas de coût réseau).
 public interface IJobRepository
 {
     int Count { get; }
@@ -20,4 +22,8 @@ public interface IJobRepository
     BackupJob AddJob(BackupJob job);
     bool UpdateJob(int id, BackupJob updated);
     bool DeleteJob(int id);
+
+    Task<BackupJob> AddJobAsync(BackupJob job, CancellationToken ct = default);
+    Task<bool> UpdateJobAsync(int id, BackupJob updated, CancellationToken ct = default);
+    Task<bool> DeleteJobAsync(int id, CancellationToken ct = default);
 }

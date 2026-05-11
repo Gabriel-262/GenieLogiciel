@@ -9,19 +9,22 @@ public partial class JobListViewModel : ObservableObject
 {
     private readonly IJobRepository _repo;
     private readonly IBackupEngine _engine;
+    private readonly SettingsService _settings;
 
     [ObservableProperty] private ObservableCollection<JobItemViewModel> jobs = new();
 
-    public JobListViewModel(IJobRepository repo, IBackupEngine engine)
+    public JobListViewModel(IJobRepository repo, IBackupEngine engine, SettingsService settings)
     {
         _repo = repo;
         _engine = engine;
+        _settings = settings;
         Refresh();
     }
 
     public int Count => Jobs.Count;
     public bool IsEmpty => Jobs.Count == 0;
-    public bool IsFull => Jobs.Count >= AppConfig.MaxJobs;
+    public int MaxJobs => _settings.MaxJobs;
+    public bool IsFull => Jobs.Count >= _settings.MaxJobs;
     public bool HasAnyChecked => Jobs.Any(j => j.IsSelected);
 
     public void Refresh()
@@ -59,9 +62,9 @@ public partial class JobListViewModel : ObservableObject
         index1Based >= 1 && index1Based <= Jobs.Count ? Jobs[index1Based - 1] : null;
 
     [RelayCommand]
-    public void DeleteJob(int id)
+    public async Task DeleteJobAsync(int id)
     {
-        if (_repo.DeleteJob(id)) Refresh();
+        if (await _repo.DeleteJobAsync(id).ConfigureAwait(false)) Refresh();
     }
 
     [RelayCommand]

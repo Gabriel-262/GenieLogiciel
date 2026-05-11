@@ -20,7 +20,7 @@ public partial class JobListView : UserControl
         if (Vm.JobList.IsFull)
         {
             MessageBox.Show(
-                string.Format(Translator.Get("Error_MaxJobs"), AppConfig.MaxJobs),
+                string.Format(Translator.Get("Error_MaxJobs"), Vm.JobList.MaxJobs),
                 Translator.Get("UI_Cannot_AddJob"), MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
@@ -63,7 +63,7 @@ public partial class JobListView : UserControl
 
     private bool EnsureWithinLimit(int requestedCount)
     {
-        int max = AppConfig.MaxJobs;
+        int max = Vm.JobList.MaxJobs;
         if (requestedCount <= max) return true;
         MessageBox.Show(
             string.Format(Translator.Get("UI_Warn_TooManyJobsToExecute"), requestedCount, max),

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using EasyLog;
 using EasySave.Models;
 
 namespace EasySave.Services;
@@ -17,6 +18,11 @@ public class SettingsService
     }
 
     public AppSettings Current => _settings;
+
+    // Valeurs dérivées (anciennement sur AppConfig). On centralise ici pour
+    // qu'il n'y ait plus qu'une seule source de vérité injectable.
+    public int MaxJobs => AppConfig.ResolveMaxJobs(_settings.MaxJobs);
+    public LogFormat LogFormat => AppConfig.ResolveLogFormat(_settings.LogFormat);
 
     public void Save() => WriteToDisk(_settings, _paths.GetSettingsFilePath());
 

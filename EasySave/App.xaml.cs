@@ -32,7 +32,7 @@ public partial class App : Application
         // === Bootstrap CLIENT (UI/locale uniquement) ===
         var pathService     = new PathService();
         var settingsService = new SettingsService(pathService);
-        AppConfig.Settings  = settingsService.Current;
+        pathService.Bind(settingsService);
 
         Translator.Initialize(pathService.GetLangFilePath);
         Translator.LanguageChanged += SyncLocalizedResources;

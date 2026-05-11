@@ -33,9 +33,14 @@ public partial class JobProgressItemViewModel : ObservableObject
     [ObservableProperty] private PauseReason? pauseReason;
 
     // Vrai uniquement pour les pauses "subies" (logiciel métier ou fichier
-    // verrouillé). La pause utilisateur n'affiche aucun bandeau d'erreur.
+    // verrouillé). Pour ces pauses on affiche le bandeau orange (erreur).
     public bool IsPausedForError =>
         IsPaused && PauseReason is Services.PauseReason.Business or Services.PauseReason.FileLocked;
+
+    // Vrai pour la pause manuelle utilisateur. On affiche un indicateur
+    // discret (pas un bandeau d'erreur) pour donner un retour visuel clair.
+    public bool IsPausedByUser =>
+        IsPaused && PauseReason == Services.PauseReason.User;
 
     public string ErrorMessage => PauseReason switch
     {
@@ -47,10 +52,14 @@ public partial class JobProgressItemViewModel : ObservableObject
     partial void OnPauseReasonChanged(PauseReason? value)
     {
         OnPropertyChanged(nameof(IsPausedForError));
+        OnPropertyChanged(nameof(IsPausedByUser));
         OnPropertyChanged(nameof(ErrorMessage));
     }
     partial void OnIsPausedChanged(bool value)
-        => OnPropertyChanged(nameof(IsPausedForError));
+    {
+        OnPropertyChanged(nameof(IsPausedForError));
+        OnPropertyChanged(nameof(IsPausedByUser));
+    }
 
     private readonly Action<int> _pauseAction;
     private readonly Action<int> _resumeAction;

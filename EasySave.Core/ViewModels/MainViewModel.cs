@@ -30,7 +30,7 @@ public partial class MainViewModel : ObservableObject
     {
         _ui = SynchronizationContext.Current;
 
-        JobList = new JobListViewModel(repo, engine);
+        JobList = new JobListViewModel(repo, engine, settings);
         JobForm = new JobFormViewModel(repo);
         Settings = new SettingsViewModel(settings);
         Execution = new JobExecutionViewModel(engine);
