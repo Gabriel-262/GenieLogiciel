@@ -53,13 +53,44 @@ public partial class SettingsViewModel : ObservableObject
 
     public string LanguageDisplayName => LanguageLabel(Language);
 
+    // Setting-driven persistence (used by ComboBox bindings).
+    // Source generator only invokes these once the field-backed setter runs,
+    // so constructor-time field assignments do not trigger them.
+    partial void OnLanguageChanged(string value)
+    {
+        if (!IsSupportedLanguage(value)) return;
+        _settings.Current.Language = value;
+        _settings.Save();
+        Translator.SetLanguage(value);
+    }
+
+    partial void OnLogFormatChanged(string value)
+    {
+        if (value != "json" && value != "xml") return;
+        _settings.Current.LogFormat = value;
+        _settings.Save();
+        AppConfig.Settings = _settings.Current;
+    }
+
+    partial void OnBusinessSoftwareCheckModeChanged(string value)
+    {
+        if (value != "StartOnly" && value != "Continuous") return;
+        _settings.Current.BusinessSoftwareCheckMode = value;
+        _settings.Save();
+        AppConfig.Settings = _settings.Current;
+    }
+
+    partial void OnCryptoModeChanged(string value)
+    {
+        if (value != "Rapide" && value != "Standard" && value != "Premium") return;
+        _settings.Current.CryptoMode = value;
+        _settings.Save();
+    }
+
     [RelayCommand(CanExecute = nameof(CanChangeLanguage))]
     private void ChangeLanguage(string code)
     {
         Language = code;
-        _settings.Current.Language = code;
-        _settings.Save();
-        Translator.SetLanguage(code);
     }
 
     private bool CanChangeLanguage(string? code) => IsSupportedLanguage(code);

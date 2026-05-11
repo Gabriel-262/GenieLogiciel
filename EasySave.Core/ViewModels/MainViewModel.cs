@@ -1,3 +1,4 @@
+using System.Collections.Specialized;
 using CommunityToolkit.Mvvm.ComponentModel;
 using EasySave.Services;
 
@@ -37,11 +38,48 @@ public partial class MainViewModel : ObservableObject
 
         engine.JobStarted += OnJobStarted;
         engine.JobCompleted += OnJobCompleted;
+
+        // Bind each JobItem to its live progress, so per-job cards show
+        // a progress bar + pause/resume/stop without a separate tab.
+        Execution.Jobs.CollectionChanged += OnExecutionJobsChanged;
+        JobList.Jobs.CollectionChanged += (_, __) => SyncProgressToList();
     }
 
     public void MarkExecutionViewed()
     {
         UnseenExecutionCount = 0;
+    }
+
+    private void OnExecutionJobsChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.NewItems is not null)
+            foreach (JobProgressItemViewModel p in e.NewItems)
+                AttachProgress(p);
+
+        if (e.OldItems is not null)
+            foreach (JobProgressItemViewModel p in e.OldItems)
+                DetachProgress(p);
+    }
+
+    private void AttachProgress(JobProgressItemViewModel p)
+    {
+        var item = JobList.FindById(p.JobId);
+        if (item is not null) item.Progress = p;
+    }
+
+    private void DetachProgress(JobProgressItemViewModel p)
+    {
+        var item = JobList.FindById(p.JobId);
+        if (item is not null && ReferenceEquals(item.Progress, p))
+            item.Progress = null;
+    }
+
+    private void SyncProgressToList()
+    {
+        // Called after JobList.Refresh: re-attach progress objects to newly
+        // recreated JobItemViewModels.
+        foreach (var item in JobList.Jobs)
+            item.Progress = Execution.Jobs.FirstOrDefault(p => p.JobId == item.Id);
     }
 
     private void OnJobStarted(object? sender, JobLifecycleEventArgs e) => RunOnUi(() =>

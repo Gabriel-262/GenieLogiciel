@@ -12,6 +12,14 @@ public partial class JobItemViewModel : ObservableObject
     [ObservableProperty] private BackupType type;
     [ObservableProperty] private bool isSelected;
 
+    // Set by MainViewModel when this job is currently executing.
+    // When non-null, the card shows progress + pause/resume/stop controls.
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsRunning))]
+    private JobProgressItemViewModel? progress;
+
+    public bool IsRunning => Progress is not null;
+
     public JobItemViewModel() { }
 
     public JobItemViewModel(BackupJob job)

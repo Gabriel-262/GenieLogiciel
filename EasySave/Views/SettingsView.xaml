@@ -6,10 +6,9 @@
             <Setter Property="Margin" Value="0,0,0,14"/>
         </Style>
         <Style x:Key="FieldLabel" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
-            <Setter Property="FontFamily" Value="{StaticResource HeaderFont}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
             <Setter Property="FontSize" Value="12"/>
-            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Margin" Value="0,0,0,6"/>
         </Style>
         <Style x:Key="FieldHelp" TargetType="TextBlock" BasedOn="{StaticResource Subtitle}">
@@ -24,55 +23,55 @@
             <!-- Title -->
             <StackPanel Margin="0,0,0,20">
                 <TextBlock Text="{DynamicResource UI_Settings_Title}" Style="{StaticResource H1}"/>
-                <TextBlock Text="✠ CODEX · ASTARTES · CONFIGURATIO ✠" Style="{StaticResource Subtitle}"/>
+                <TextBlock Text="Préférences de l'application." Style="{StaticResource Subtitle}"/>
             </StackPanel>
 
             <!-- APPARENCE -->
             <Border Style="{StaticResource Card}" Margin="0,0,0,16">
                 <StackPanel>
-                    <TextBlock Style="{StaticResource SectionTitle}" Text="APPARENCE"/>
+                    <TextBlock Style="{StaticResource SectionTitle}" Text="Apparence"/>
                     <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Margin="0,4,0,16"/>
 
-                    <TextBlock Style="{StaticResource FieldLabel}" Text="{DynamicResource UI_Settings_Language}"/>
-                    <WrapPanel Margin="0,0,0,16">
-                        <Button Content="English"  Click="Lang_Click" Tag="en" Margin="0,0,8,8"/>
-                        <Button Content="Français" Click="Lang_Click" Tag="fr" Margin="0,0,8,8"/>
-                        <Button Content="中文"     Click="Lang_Click" Tag="zh" Margin="0,0,8,8"/>
-                        <Button Content="עברית"   Click="Lang_Click" Tag="he" Margin="0,0,8,8"/>
-                        <Button Content="Kreyòl"  Click="Lang_Click" Tag="ht" Margin="0,0,8,8"/>
-                        <Button Content="Ch'ti"   Click="Lang_Click" Tag="ch" Margin="0,0,8,8"/>
-                    </WrapPanel>
-
-                    <TextBlock Style="{StaticResource FieldLabel}" Text="{DynamicResource UI_Settings_Theme}"/>
-                    <StackPanel Orientation="Horizontal">
-                        <Button Content="{DynamicResource UI_Theme_Dark}"  Click="Theme_Click" Tag="dark"
-                                Style="{StaticResource PrimaryButton}"/>
-                        <Button Content="{DynamicResource UI_Theme_Light}" Click="Theme_Click" Tag="light"/>
-                    </StackPanel>
+                    <Grid Style="{StaticResource SettingRow}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="200"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,16,0">
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="{DynamicResource UI_Settings_Theme}"/>
+                            <TextBlock Style="{StaticResource FieldHelp}" Text="Thème clair ou sombre."/>
+                        </StackPanel>
+                        <ComboBox x:Name="ThemeCombo" Grid.Column="1" VerticalAlignment="Center"
+                                  SelectedValuePath="Tag"
+                                  SelectionChanged="ThemeCombo_SelectionChanged">
+                            <ComboBoxItem Content="{DynamicResource UI_Theme_Light}" Tag="light"/>
+                            <ComboBoxItem Content="{DynamicResource UI_Theme_Dark}"  Tag="dark"/>
+                        </ComboBox>
+                    </Grid>
                 </StackPanel>
             </Border>
 
             <!-- JOURNALISATION -->
             <Border Style="{StaticResource Card}" Margin="0,0,0,16">
                 <StackPanel>
-                    <TextBlock Style="{StaticResource SectionTitle}" Text="JOURNALISATION"/>
+                    <TextBlock Style="{StaticResource SectionTitle}" Text="Journalisation"/>
                     <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Margin="0,4,0,16"/>
 
                     <Grid Style="{StaticResource SettingRow}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="200"/>
                         </Grid.ColumnDefinitions>
-                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                            <TextBlock Style="{StaticResource FieldLabel}" Text="FORMAT DES LOGS"/>
-                            <TextBlock Foreground="{DynamicResource ForegroundBrush}"
-                                       FontSize="15" FontWeight="SemiBold"
-                                       Text="{Binding LogFormat, Mode=OneWay}"/>
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,16,0">
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="Format des logs"/>
+                            <TextBlock Style="{StaticResource FieldHelp}" Text="Format de sortie des fichiers journaux."/>
                         </StackPanel>
-                        <Button Grid.Column="1"
-                                Content="{DynamicResource UI_Settings_ToggleLogFormat}"
-                                VerticalAlignment="Center"
-                                Command="{Binding ToggleLogFormatCommand}"/>
+                        <ComboBox Grid.Column="1" VerticalAlignment="Center"
+                                  SelectedValuePath="Tag"
+                                  SelectedValue="{Binding LogFormat, Mode=TwoWay}">
+                            <ComboBoxItem Content="JSON" Tag="json"/>
+                            <ComboBoxItem Content="XML"  Tag="xml"/>
+                        </ComboBox>
                     </Grid>
                 </StackPanel>
             </Border>
@@ -80,10 +79,9 @@
             <!-- LIMITES & PERFORMANCE -->
             <Border Style="{StaticResource Card}" Margin="0,0,0,16">
                 <StackPanel>
-                    <TextBlock Style="{StaticResource SectionTitle}" Text="LIMITES &amp; PERFORMANCE"/>
+                    <TextBlock Style="{StaticResource SectionTitle}" Text="Limites &amp; performance"/>
                     <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Margin="0,4,0,16"/>
 
-                    <!-- Max jobs total -->
                     <Grid Style="{StaticResource SettingRow}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -91,20 +89,19 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,16,0">
-                            <TextBlock Style="{StaticResource FieldLabel}" Text="NOMBRE MAX DE TRAVAUX"/>
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="Nombre max de travaux"/>
                             <TextBlock Style="{StaticResource FieldHelp}"
                                        Text="{DynamicResource UI_Settings_MaxJobsDesc}"/>
                         </StackPanel>
                         <TextBox x:Name="MaxJobsBox" Grid.Column="1" VerticalAlignment="Center"
                                  Text="{Binding MaxJobs, UpdateSourceTrigger=PropertyChanged}"/>
-                        <Button Grid.Column="2" Content="✓"
-                                MinWidth="42" Margin="8,0,0,0"
+                        <Button Grid.Column="2" Content="Enregistrer"
+                                Margin="8,0,0,0"
                                 Style="{StaticResource PrimaryButton}"
                                 VerticalAlignment="Center"
                                 Click="SaveMaxJobs_Click"/>
                     </Grid>
 
-                    <!-- Max parallel jobs -->
                     <Grid Style="{StaticResource SettingRow}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -112,21 +109,20 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,16,0">
-                            <TextBlock Style="{StaticResource FieldLabel}" Text="TRAVAUX EN PARALLÈLE"/>
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="Travaux en parallèle"/>
                             <TextBlock Style="{StaticResource FieldHelp}"
-                                       Text="Nombre de rites pouvant s'exécuter simultanément."/>
+                                       Text="Nombre de travaux pouvant s'exécuter simultanément."/>
                         </StackPanel>
                         <TextBox x:Name="MaxParallelJobsBox" Grid.Column="1" VerticalAlignment="Center"
                                  Text="{Binding MaxParallelJobs, UpdateSourceTrigger=PropertyChanged}"/>
-                        <Button Grid.Column="2" Content="✓"
-                                MinWidth="42" Margin="8,0,0,0"
+                        <Button Grid.Column="2" Content="Enregistrer"
+                                Margin="8,0,0,0"
                                 Style="{StaticResource PrimaryButton}"
                                 VerticalAlignment="Center"
                                 Command="{Binding ChangeMaxParallelJobsCommand}"
                                 CommandParameter="{Binding Text, ElementName=MaxParallelJobsBox}"/>
                     </Grid>
 
-                    <!-- Max parallel files per job -->
                     <Grid Style="{StaticResource SettingRow}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -134,21 +130,20 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,16,0">
-                            <TextBlock Style="{StaticResource FieldLabel}" Text="FICHIERS // PAR TRAVAIL"/>
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="Fichiers // par travail"/>
                             <TextBlock Style="{StaticResource FieldHelp}"
-                                       Text="Fichiers traités en parallèle dans un même rite."/>
+                                       Text="Fichiers traités en parallèle dans un même travail."/>
                         </StackPanel>
                         <TextBox x:Name="MaxParallelFilesBox" Grid.Column="1" VerticalAlignment="Center"
                                  Text="{Binding MaxParallelFilesPerJob, UpdateSourceTrigger=PropertyChanged}"/>
-                        <Button Grid.Column="2" Content="✓"
-                                MinWidth="42" Margin="8,0,0,0"
+                        <Button Grid.Column="2" Content="Enregistrer"
+                                Margin="8,0,0,0"
                                 Style="{StaticResource PrimaryButton}"
                                 VerticalAlignment="Center"
                                 Command="{Binding ChangeMaxParallelFilesPerJobCommand}"
                                 CommandParameter="{Binding Text, ElementName=MaxParallelFilesBox}"/>
                     </Grid>
 
-                    <!-- Large file threshold -->
                     <Grid Style="{StaticResource SettingRow}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -156,14 +151,14 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,16,0">
-                            <TextBlock Style="{StaticResource FieldLabel}" Text="SEUIL « GROS FICHIER » (Ko)"/>
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="Seuil « gros fichier » (Ko)"/>
                             <TextBlock Style="{StaticResource FieldHelp}"
                                        Text="Deux fichiers ≥ ce seuil ne sont jamais transférés ensemble. 0 = désactivé."/>
                         </StackPanel>
                         <TextBox x:Name="LargeFileThresholdBox" Grid.Column="1" VerticalAlignment="Center"
                                  Text="{Binding LargeFileThresholdKb, UpdateSourceTrigger=PropertyChanged}"/>
-                        <Button Grid.Column="2" Content="✓"
-                                MinWidth="42" Margin="8,0,0,0"
+                        <Button Grid.Column="2" Content="Enregistrer"
+                                Margin="8,0,0,0"
                                 Style="{StaticResource PrimaryButton}"
                                 VerticalAlignment="Center"
                                 Command="{Binding ChangeLargeFileThresholdKbCommand}"
@@ -175,7 +170,7 @@
             <!-- LOGICIEL MÉTIER -->
             <Border Style="{StaticResource Card}" Margin="0,0,0,16">
                 <StackPanel>
-                    <TextBlock Style="{StaticResource SectionTitle}" Text="SURVEILLANCE LOGICIEL MÉTIER"/>
+                    <TextBlock Style="{StaticResource SectionTitle}" Text="Surveillance logiciel métier"/>
                     <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Margin="0,4,0,16"/>
 
                     <TextBlock Style="{StaticResource FieldHelp}" Margin="0,0,0,12"
@@ -188,11 +183,11 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}"
-                                   Text="PROCESSUS" VerticalAlignment="Center" Margin="0"/>
+                                   Text="Processus" VerticalAlignment="Center" Margin="0"/>
                         <TextBox x:Name="BusinessSoftwareBox" Grid.Column="1" VerticalAlignment="Center"
                                  Text="{Binding BusinessSoftwareName, UpdateSourceTrigger=PropertyChanged}"/>
-                        <Button Grid.Column="2" Content="✓"
-                                MinWidth="42" Margin="8,0,0,0"
+                        <Button Grid.Column="2" Content="Enregistrer"
+                                Margin="8,0,0,0"
                                 Style="{StaticResource PrimaryButton}"
                                 VerticalAlignment="Center"
                                 Command="{Binding ChangeBusinessSoftwareNameCommand}"
@@ -203,16 +198,15 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="160"/>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}"
-                                   Text="MODE DE VÉRIF." VerticalAlignment="Center" Margin="0"/>
-                        <TextBlock Grid.Column="1" Text="{Binding BusinessSoftwareCheckMode}"
-                                   FontWeight="SemiBold" VerticalAlignment="Center"/>
-                        <Button Grid.Column="2"
-                                Content="{DynamicResource UI_Settings_ToggleBizCheckMode}"
-                                Command="{Binding ToggleBusinessSoftwareCheckModeCommand}"
-                                VerticalAlignment="Center"/>
+                                   Text="Mode de vérification" VerticalAlignment="Center" Margin="0"/>
+                        <ComboBox Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Left" MinWidth="220"
+                                  SelectedValuePath="Tag"
+                                  SelectedValue="{Binding BusinessSoftwareCheckMode, Mode=TwoWay}">
+                            <ComboBoxItem Content="Au lancement uniquement" Tag="StartOnly"/>
+                            <ComboBoxItem Content="Continue (avant chaque fichier)" Tag="Continuous"/>
+                        </ComboBox>
                     </Grid>
                 </StackPanel>
             </Border>
@@ -220,7 +214,7 @@
             <!-- CHIFFREMENT -->
             <Border Style="{StaticResource Card}" Margin="0,0,0,16">
                 <StackPanel>
-                    <TextBlock Style="{StaticResource SectionTitle}" Text="CHIFFREMENT · CRYPTOSOFT"/>
+                    <TextBlock Style="{StaticResource SectionTitle}" Text="Chiffrement (CryptoSoft)"/>
                     <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Margin="0,4,0,16"/>
 
                     <TextBlock Style="{StaticResource FieldHelp}" Margin="0,0,0,12"
@@ -230,19 +224,19 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="160"/>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}"
-                                   Text="MODE" VerticalAlignment="Center" Margin="0"/>
-                        <TextBlock Grid.Column="1" Text="{Binding CryptoMode}"
-                                   FontWeight="SemiBold" VerticalAlignment="Center"/>
-                        <Button Grid.Column="2"
-                                Content="{DynamicResource UI_Settings_ToggleCryptoMode}"
-                                Command="{Binding ToggleCryptoModeCommand}"
-                                VerticalAlignment="Center"/>
+                                   Text="Mode" VerticalAlignment="Center" Margin="0"/>
+                        <ComboBox Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Left" MinWidth="180"
+                                  SelectedValuePath="Tag"
+                                  SelectedValue="{Binding CryptoMode, Mode=TwoWay}">
+                            <ComboBoxItem Content="Rapide"   Tag="Rapide"/>
+                            <ComboBoxItem Content="Standard" Tag="Standard"/>
+                            <ComboBoxItem Content="Premium"  Tag="Premium"/>
+                        </ComboBox>
                     </Grid>
 
-                    <TextBlock Style="{StaticResource FieldLabel}" Text="EXTENSIONS CHIFFRÉES"/>
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="Extensions chiffrées"/>
                     <ItemsControl ItemsSource="{Binding EncryptedExtensions}" Margin="0,6,0,10">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -254,11 +248,10 @@
                                 <Border Style="{StaticResource Pill}" Margin="0,0,6,6">
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="{Binding}"
-                                                   Foreground="{DynamicResource AccentBrush}"
-                                                   FontWeight="Bold"
+                                                   FontWeight="SemiBold"
                                                    VerticalAlignment="Center"/>
-                                        <Button Content="✕" Margin="8,0,0,0" Padding="4,0"
-                                                MinWidth="20"
+                                        <Button Content="×" Margin="8,0,0,0" Padding="6,0"
+                                                MinWidth="22"
                                                 Command="{Binding DataContext.RemoveExtensionCommand,
                                                                   RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 CommandParameter="{Binding}"/>
@@ -275,10 +268,10 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}"
-                                   Text="AJOUTER" VerticalAlignment="Center" Margin="0"/>
+                                   Text="Ajouter" VerticalAlignment="Center" Margin="0"/>
                         <TextBox x:Name="NewExtensionBox" Grid.Column="1" VerticalAlignment="Center"/>
                         <Button Grid.Column="2"
-                                Content="✚  AJOUTER"
+                                Content="+ Ajouter"
                                 Margin="8,0,0,0"
                                 Style="{StaticResource PrimaryButton}"
                                 VerticalAlignment="Center"
@@ -291,7 +284,7 @@
             <!-- CHEMINS -->
             <Border Style="{StaticResource Card}" Margin="0,0,0,24">
                 <StackPanel>
-                    <TextBlock Style="{StaticResource SectionTitle}" Text="CHEMINS DE STOCKAGE"/>
+                    <TextBlock Style="{StaticResource SectionTitle}" Text="Chemins de stockage"/>
                     <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Margin="0,4,0,16"/>
 
                     <TextBlock Style="{StaticResource FieldHelp}" Margin="0,0,0,12"
@@ -303,7 +296,7 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}"
-                                   Text="JOURNAUX" VerticalAlignment="Center" Margin="0"/>
+                                   Text="Journaux" VerticalAlignment="Center" Margin="0"/>
                         <TextBox Grid.Column="1" Text="{Binding LogPath, UpdateSourceTrigger=PropertyChanged}"/>
                     </Grid>
                     <Grid Style="{StaticResource SettingRow}">
@@ -312,7 +305,7 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}"
-                                   Text="ÉTAT" VerticalAlignment="Center" Margin="0"/>
+                                   Text="État" VerticalAlignment="Center" Margin="0"/>
                         <TextBox Grid.Column="1" Text="{Binding StatePath, UpdateSourceTrigger=PropertyChanged}"/>
                     </Grid>
                     <Grid Style="{StaticResource SettingRow}">
@@ -321,7 +314,7 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}"
-                                   Text="CONFIG" VerticalAlignment="Center" Margin="0"/>
+                                   Text="Config" VerticalAlignment="Center" Margin="0"/>
                         <TextBox Grid.Column="1" Text="{Binding ConfigPath, UpdateSourceTrigger=PropertyChanged}"/>
                     </Grid>
                     <Grid Style="{StaticResource SettingRow}">
@@ -330,11 +323,11 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}"
-                                   Text="LANGUE" VerticalAlignment="Center" Margin="0"/>
+                                   Text="Langue" VerticalAlignment="Center" Margin="0"/>
                         <TextBox Grid.Column="1" Text="{Binding LangPath, UpdateSourceTrigger=PropertyChanged}"/>
                     </Grid>
 
-                    <Button Content="✓  ENREGISTRER LES CHEMINS"
+                    <Button Content="Enregistrer les chemins"
                             Style="{StaticResource PrimaryButton}"
                             HorizontalAlignment="Right"
                             Margin="0,8,0,0"

@@ -1,6 +1,6 @@
 {
   "AutoAssignJobId": false,
-  "Language": "fr",
+  "Language": "en",
   "BackKey": "r",
   "LogFormat": "xml",
   "MaxJobs": 10,
@@ -15,7 +15,7 @@
     ".docx",
     ".pdf"
   ],
-  "CryptoMode": "Standard",
+  "CryptoMode": "Rapide",
   "CryptoKey": "CryptoSoft",
   "CryptoSoftPath": null,
   "CryptoPublicKey": null,
