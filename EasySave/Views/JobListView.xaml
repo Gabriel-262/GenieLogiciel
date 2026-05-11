@@ -3,21 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
-        <Style x:Key="RequiresSelection" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding ElementName=Grid, Path=SelectedItem}" Value="{x:Null}">
-                    <Setter Property="IsEnabled" Value="False"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-        <Style x:Key="RequiresSelectionDanger" TargetType="Button" BasedOn="{StaticResource DangerButton}">
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding ElementName=Grid, Path=SelectedItem}" Value="{x:Null}">
-                    <Setter Property="IsEnabled" Value="False"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
     </UserControl.Resources>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -26,45 +13,206 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="{DynamicResource UI_JobList_Title}" Style="{StaticResource H1}"/>
-
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,4">
-            <Button Content="{DynamicResource UI_Btn_Add}"         Style="{StaticResource PrimaryButton}"        Click="Add_Click"/>
-            <Button Content="{DynamicResource UI_Btn_Edit}"        Style="{StaticResource RequiresSelection}"    Click="Edit_Click"/>
-            <Button Content="{DynamicResource UI_Btn_Delete}"      Style="{StaticResource RequiresSelectionDanger}" Click="Delete_Click"/>
-            <Button Content="{DynamicResource UI_Btn_Execute}"     Click="Execute_Click"
-                    IsEnabled="{Binding JobList.HasAnyChecked}"/>
-            <Button Content="{DynamicResource UI_Btn_ExecuteAll}"  Click="ExecuteAll_Click"/>
-            <Button Content="{DynamicResource UI_Btn_SelectAll}"   Click="SelectAll_Click"/>
-            <Button Content="{DynamicResource UI_Btn_DeselectAll}" Click="DeselectAll_Click"/>
-            <Button Content="{DynamicResource UI_Btn_Refresh}"     Click="Refresh_Click"/>
+        <!-- Title -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,4">
+            <TextBlock Text="{DynamicResource UI_JobList_Title}" Style="{StaticResource H1}"/>
+            <TextBlock Text="✠ ADEPTUS ASTARTES · DATA VAULT ✠" Style="{StaticResource Subtitle}"/>
         </StackPanel>
 
-        <TextBlock Grid.Row="2"
-                   Text="{DynamicResource UI_Exec_InProgress}"
-                   Style="{StaticResource Muted}"
-                   Margin="0,0,0,12"
-                   Visibility="{Binding IsExecutionBadgeVisible, Converter={StaticResource BoolToVis}}"/>
+        <!-- Top action bar -->
+        <Border Grid.Row="1"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,1,0,1"
+                Padding="0,12" Margin="0,16,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
-        <Border Grid.Row="3" Style="{StaticResource Card}" Padding="0">
-            <DataGrid x:Name="Grid" ItemsSource="{Binding JobList.Jobs}">
-                <DataGrid.Columns>
-                    <DataGridTemplateColumn Header="" Width="40" CanUserSort="False">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-                                          HorizontalAlignment="Center"
-                                          VerticalAlignment="Center"/>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTextColumn Header="{DynamicResource UI_Col_Id}"     Binding="{Binding Id}"         Width="60"/>
-                    <DataGridTextColumn Header="{DynamicResource UI_Col_Name}"   Binding="{Binding Name}"       Width="*"/>
-                    <DataGridTextColumn Header="{DynamicResource UI_Col_Type}"   Binding="{Binding Type}"       Width="120"/>
-                    <DataGridTextColumn Header="{DynamicResource UI_Col_Source}" Binding="{Binding SourcePath}" Width="2*"/>
-                    <DataGridTextColumn Header="{DynamicResource UI_Col_Target}" Binding="{Binding TargetPath}" Width="2*"/>
-                </DataGrid.Columns>
-            </DataGrid>
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <Button Content="✚  NOUVEAU"
+                            Style="{StaticResource PrimaryButton}"
+                            Click="Add_Click"/>
+                    <Button Content="EXÉCUTER TOUT"
+                            Click="ExecuteAll_Click"
+                            IsEnabled="{Binding JobList.HasJobs}"/>
+                </StackPanel>
+
+                <!-- Selection actions -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <Border Style="{StaticResource Pill}"
+                            VerticalAlignment="Center"
+                            Margin="0,0,8,0"
+                            Visibility="{Binding JobList.HasAnyChecked, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Foreground="{DynamicResource AccentBrush}"
+                                   FontWeight="Bold">
+                            <Run Text="{Binding JobList.SelectedCount, Mode=OneWay}"/>
+                            <Run Text=" SÉLECTIONNÉS"/>
+                        </TextBlock>
+                    </Border>
+                    <Button Content="LANCER LA SÉLECTION"
+                            Style="{StaticResource PrimaryButton}"
+                            Click="ExecuteSelection_Click"
+                            IsEnabled="{Binding JobList.HasAnyChecked}"/>
+                    <Button Content="☑  TOUT" Click="SelectAll_Click"
+                            IsEnabled="{Binding JobList.HasJobs}"/>
+                    <Button Content="☐  AUCUN" Click="DeselectAll_Click"
+                            IsEnabled="{Binding JobList.HasAnyChecked}"/>
+                    <Button Content="↻" ToolTip="Rafraîchir" MinWidth="42" Click="Refresh_Click"/>
+                </StackPanel>
+            </Grid>
         </Border>
+
+        <!-- In-progress banner -->
+        <Border Grid.Row="2"
+                Style="{StaticResource Pill}"
+                HorizontalAlignment="Left"
+                Margin="0,10,0,0"
+                Visibility="{Binding IsExecutionBadgeVisible, Converter={StaticResource BoolToVis}}">
+            <TextBlock Text="{DynamicResource UI_Exec_InProgress}"
+                       Foreground="{DynamicResource AccentBrush}"
+                       FontWeight="SemiBold"/>
+        </Border>
+
+        <!-- Empty state -->
+        <Border Grid.Row="3"
+                Style="{StaticResource Card}"
+                Margin="0,16,0,0"
+                Visibility="{Binding JobList.IsEmpty, Converter={StaticResource BoolToVis}}">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,32">
+                <TextBlock Text=""
+                           FontFamily="{StaticResource HeaderFont}"
+                           FontSize="56"
+                           Foreground="{DynamicResource AccentBrush}"
+                           HorizontalAlignment="Center"/>
+                <TextBlock Text="L'arsenal est vide."
+                           Style="{StaticResource H2}"
+                           HorizontalAlignment="Center"
+                           Margin="0,12,0,4"/>
+                <TextBlock Text="Frère, déploie ta première sauvegarde."
+                           Style="{StaticResource Muted}"
+                           HorizontalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Job cards -->
+        <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto"
+                      Margin="0,16,0,0"
+                      Padding="0,0,4,0"
+                      Visibility="{Binding JobList.HasJobs, Converter={StaticResource BoolToVis}}">
+            <ItemsControl ItemsSource="{Binding JobList.Jobs}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border x:Name="CardRoot">
+                            <Border.Style>
+                                <Style TargetType="Border" BasedOn="{StaticResource JobCard}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                                            <Setter Property="BorderThickness" Value="2"/>
+                                            <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Selection checkbox -->
+                                <CheckBox Grid.Column="0"
+                                          IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                          VerticalAlignment="Center"
+                                          Margin="0,0,14,0"/>
+
+                                <!-- ID badge -->
+                                <Border Grid.Column="1"
+                                        Style="{StaticResource Pill}"
+                                        VerticalAlignment="Top"
+                                        Margin="0,2,16,0">
+                                    <TextBlock Foreground="{DynamicResource AccentBrush}"
+                                               FontFamily="{StaticResource HeaderFont}"
+                                               FontWeight="Bold">
+                                        <Run Text="№ "/>
+                                        <Run Text="{Binding Id, Mode=OneWay}"/>
+                                    </TextBlock>
+                                </Border>
+
+                                <!-- Identity + paths -->
+                                <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Name}"
+                                                   FontFamily="{StaticResource HeaderFont}"
+                                                   FontSize="18"
+                                                   FontWeight="Bold"
+                                                   Foreground="{DynamicResource ForegroundBrush}"
+                                                   VerticalAlignment="Center"/>
+                                        <Border Style="{StaticResource Pill}"
+                                                Margin="12,0,0,0"
+                                                VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Type}"
+                                                       FontSize="10"
+                                                       FontWeight="Bold"
+                                                       Foreground="{DynamicResource AccentBrush}"/>
+                                        </Border>
+                                    </StackPanel>
+
+                                    <Grid Margin="0,8,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="SOURCE  ›  "
+                                                   Style="{StaticResource Label}"
+                                                   VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding SourcePath}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   VerticalAlignment="Center"/>
+                                    </Grid>
+                                    <Grid Margin="0,2,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="CIBLE   ›  "
+                                                   Style="{StaticResource Label}"
+                                                   VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding TargetPath}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   VerticalAlignment="Center"/>
+                                    </Grid>
+                                </StackPanel>
+
+                                <!-- Per-job actions: one click each -->
+                                <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button Style="{StaticResource PrimaryButton}"
+                                            Content=" EXÉCUTER"
+                                            ToolTip="Exécuter ce travail"
+                                            Tag="{Binding Id}"
+                                            Click="ExecuteOne_Click"/>
+                                    <Button Style="{StaticResource IconButton}"
+                                            Content="✎"
+                                            ToolTip="Modifier"
+                                            Tag="{Binding Id}"
+                                            Click="EditOne_Click"/>
+                                    <Button Style="{StaticResource DangerButton}"
+                                            Content="✕"
+                                            ToolTip="Supprimer"
+                                            MinWidth="42"
+                                            Tag="{Binding Id}"
+                                            Click="DeleteOne_Click"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
     </Grid>
 </UserControl>

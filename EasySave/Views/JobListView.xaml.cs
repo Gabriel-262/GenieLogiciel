@@ -29,36 +29,57 @@ public partial class JobListView : UserControl
         Vm.JobList.Refresh();
     }
 
-    private void Edit_Click(object sender, RoutedEventArgs e)
+    private void ExecuteOne_Click(object sender, RoutedEventArgs e)
     {
-        if (Grid.SelectedItem is not JobItemViewModel selected) return;
-        Vm.JobForm.LoadForEdit(selected.ToModel());
+        if (sender is not Button b || b.Tag is not int id) return;
+        if (!EnsureWithinLimit(1)) return;
+        _ = Vm.JobList.ExecuteJobCommand.ExecuteAsync(id);
+    }
+
+    private void EditOne_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button b || b.Tag is not int id) return;
+        var item = Vm.JobList.FindById(id);
+        if (item is null) return;
+        Vm.JobForm.LoadForEdit(item.ToModel());
         new JobFormWindow { DataContext = Vm.JobForm, Owner = Window.GetWindow(this) }.ShowDialog();
         Vm.JobList.Refresh();
     }
 
-    private void Delete_Click(object sender, RoutedEventArgs e)
+    private void DeleteOne_Click(object sender, RoutedEventArgs e)
     {
-        if (Grid.SelectedItem is not JobItemViewModel selected) return;
+        if (sender is not Button b || b.Tag is not int id) return;
+        var item = Vm.JobList.FindById(id);
+        if (item is null) return;
         var confirm = MessageBox.Show(
-            string.Format(Translator.Get("UI_Confirm_DeleteJob"), selected.Name, selected.Id),
+            string.Format(Translator.Get("UI_Confirm_DeleteJob"), item.Name, item.Id),
             Translator.Get("UI_Confirm_DeleteTitle"), MessageBoxButton.YesNo, MessageBoxImage.Question);
         if (confirm != MessageBoxResult.Yes) return;
-        Vm.JobList.DeleteJobCommand.Execute(selected.Id);
+        Vm.JobList.DeleteJobCommand.Execute(item.Id);
     }
 
-    private void Execute_Click(object sender, RoutedEventArgs e)
+    private void ExecuteSelection_Click(object sender, RoutedEventArgs e)
     {
-        var checkedIds = Vm.JobList.Jobs.Where(j => j.IsSelected).Select(j => j.Id).ToList();
-        if (checkedIds.Count == 0) return;
-        if (!EnsureWithinLimit(checkedIds.Count)) return;
-        _ = Vm.JobList.ExecuteManyCommand.ExecuteAsync(checkedIds);
+        var ids = Vm.JobList.Jobs.Where(j => j.IsSelected).Select(j => j.Id).ToList();
+        if (ids.Count == 0) return;
+        if (!EnsureWithinLimit(ids.Count)) return;
+        _ = Vm.JobList.ExecuteManyCommand.ExecuteAsync(ids);
     }
 
     private void ExecuteAll_Click(object sender, RoutedEventArgs e)
     {
         if (!EnsureWithinLimit(Vm.JobList.Count)) return;
         _ = Vm.JobList.ExecuteAllCommand.ExecuteAsync(null);
+    }
+
+    private void SelectAll_Click(object sender, RoutedEventArgs e)
+    {
+        foreach (var j in Vm.JobList.Jobs) j.IsSelected = true;
+    }
+
+    private void DeselectAll_Click(object sender, RoutedEventArgs e)
+    {
+        foreach (var j in Vm.JobList.Jobs) j.IsSelected = false;
     }
 
     private bool EnsureWithinLimit(int requestedCount)
@@ -70,16 +91,6 @@ public partial class JobListView : UserControl
             Translator.Get("UI_Cannot_Execute"),
             MessageBoxButton.OK, MessageBoxImage.Warning);
         return false;
-    }
-
-    private void SelectAll_Click(object sender, RoutedEventArgs e)
-    {
-        foreach (var j in Vm.JobList.Jobs) j.IsSelected = true;
-    }
-
-    private void DeselectAll_Click(object sender, RoutedEventArgs e)
-    {
-        foreach (var j in Vm.JobList.Jobs) j.IsSelected = false;
     }
 
     private void Refresh_Click(object sender, RoutedEventArgs e)

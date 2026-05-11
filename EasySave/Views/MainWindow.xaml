@@ -4,8 +4,8 @@
         xmlns:views="clr-namespace:EasySave.Views"
         Title="{DynamicResource UI_Window_Main_Title}"
         Icon="/Icone.ico"
-        Width="1100" Height="700"
-        MinWidth="800" MinHeight="520"
+        Width="1200" Height="760"
+        MinWidth="900" MinHeight="560"
         Style="{StaticResource AppWindow}"
         Background="{DynamicResource BackgroundBrush}"
         Foreground="{DynamicResource ForegroundBrush}"
@@ -16,48 +16,101 @@
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="200"/>
+            <ColumnDefinition Width="230"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
         <!-- Sidebar -->
         <Border Grid.Column="0"
                 Background="{DynamicResource SurfaceBrush}"
-                BorderBrush="{DynamicResource BorderBrush}"
-                BorderThickness="0,0,1,0">
-            <StackPanel Margin="16">
-                <TextBlock Text="EasySave" FontSize="22" FontWeight="Bold"
-                           Foreground="{DynamicResource AccentBrush}" Margin="0,0,0,4"/>
-                <TextBlock Text="v2.0" Style="{StaticResource Muted}" Margin="0,0,0,24"/>
+                BorderBrush="{DynamicResource AccentBrush}"
+                BorderThickness="0,0,2,0">
+            <DockPanel LastChildFill="True">
 
-                <Button Content="{DynamicResource UI_Sidebar_Jobs}"      Margin="0,0,0,6" Click="NavJobs_Click"      HorizontalContentAlignment="Left"/>
-
-                <Grid Margin="0,0,0,6">
-                    <Button Content="{DynamicResource UI_Sidebar_Execution}" Click="NavExecution_Click" HorizontalContentAlignment="Left"/>
-                    <Border HorizontalAlignment="Right" VerticalAlignment="Center"
-                            Margin="0,0,12,0"
-                            Background="#DC2626"
-                            CornerRadius="10"
-                            MinWidth="20" Height="20"
-                            Padding="6,0"
-                            Visibility="{Binding IsExecutionBadgeVisible, Converter={StaticResource BoolToVis}}">
-                        <TextBlock Text="{Binding UnseenExecutionCount}"
-                                   Foreground="White"
-                                   FontSize="11"
-                                   FontWeight="Bold"
+                <!-- Brand block -->
+                <Border DockPanel.Dock="Top"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="0,0,0,1"
+                        Padding="18,22,18,18">
+                    <StackPanel>
+                        <TextBlock Text="✠ EASYSAVE ✠"
+                                   FontFamily="{StaticResource HeaderFont}"
+                                   FontSize="20" FontWeight="Bold"
+                                   Foreground="{DynamicResource AccentBrush}"
+                                   HorizontalAlignment="Center"/>
+                        <TextBlock Text="ADEPTUS · ASTARTES · DATA"
+                                   FontFamily="{StaticResource HeaderFont}"
+                                   FontSize="9" FontWeight="Bold"
+                                   Foreground="{DynamicResource MutedForegroundBrush}"
                                    HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"/>
-                    </Border>
-                </Grid>
+                                   Margin="0,4,0,0"/>
+                        <TextBlock Text="PRO · IMPERATOR · v2.0"
+                                   Style="{StaticResource Subtitle}"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Border>
 
-                <Button Content="{DynamicResource UI_Sidebar_Settings}"  Margin="0,0,0,6" Click="NavSettings_Click"  HorizontalContentAlignment="Left"/>
+                <!-- Language footer -->
+                <Border DockPanel.Dock="Bottom"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="0,1,0,0"
+                        Padding="18,12">
+                    <StackPanel>
+                        <TextBlock Text="LINGUA" Style="{StaticResource Label}"/>
+                        <TextBlock Text="{Binding Settings.LanguageDisplayName}"
+                                   Foreground="{DynamicResource ForegroundBrush}"
+                                   FontWeight="SemiBold"
+                                   Margin="0,2,0,0"/>
+                    </StackPanel>
+                </Border>
 
-                <TextBlock Text="{Binding Settings.LanguageDisplayName}"
-                           Style="{StaticResource Muted}" Margin="0,24,0,0"/>
-            </StackPanel>
+                <!-- Nav -->
+                <StackPanel Margin="0,8,0,0">
+                    <Button Style="{StaticResource NavButton}" Click="NavJobs_Click">
+                        <TextBlock>
+                            <Run Text="❖  "/>
+                            <Run Text="{DynamicResource UI_Sidebar_Jobs}"/>
+                        </TextBlock>
+                    </Button>
+
+                    <Grid>
+                        <Button Style="{StaticResource NavButton}" Click="NavExecution_Click">
+                            <TextBlock>
+                                <Run Text="  "/>
+                                <Run Text="{DynamicResource UI_Sidebar_Execution}"/>
+                            </TextBlock>
+                        </Button>
+                        <Border HorizontalAlignment="Right" VerticalAlignment="Center"
+                                Margin="0,0,14,0"
+                                Background="{DynamicResource DangerBrush}"
+                                BorderBrush="{DynamicResource AccentBrush}"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                MinWidth="22" Height="22"
+                                Padding="6,0"
+                                IsHitTestVisible="False"
+                                Visibility="{Binding IsExecutionBadgeVisible, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="{Binding UnseenExecutionCount}"
+                                       Foreground="{DynamicResource DangerForegroundBrush}"
+                                       FontSize="11"
+                                       FontWeight="Bold"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                        </Border>
+                    </Grid>
+
+                    <Button Style="{StaticResource NavButton}" Click="NavSettings_Click">
+                        <TextBlock>
+                            <Run Text="✦  "/>
+                            <Run Text="{DynamicResource UI_Sidebar_Settings}"/>
+                        </TextBlock>
+                    </Button>
+                </StackPanel>
+            </DockPanel>
         </Border>
 
         <!-- Content -->
-        <ContentControl x:Name="ContentHost" Grid.Column="1" Margin="24"/>
+        <ContentControl x:Name="ContentHost" Grid.Column="1" Margin="28,24,28,24"/>
     </Grid>
 </Window>

@@ -1,14 +1,18 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- Dark palette overrides. Merged at runtime by ThemeManager. -->
-    <SolidColorBrush x:Key="BackgroundBrush"         Color="#FF0F172A"/>
-    <SolidColorBrush x:Key="SurfaceBrush"            Color="#FF1E293B"/>
-    <SolidColorBrush x:Key="BorderBrush"             Color="#FF334155"/>
-    <SolidColorBrush x:Key="ForegroundBrush"         Color="#FFF1F5F9"/>
-    <SolidColorBrush x:Key="MutedForegroundBrush"    Color="#FF94A3B8"/>
-    <SolidColorBrush x:Key="AccentBrush"             Color="#FF3B82F6"/>
-    <SolidColorBrush x:Key="AccentForegroundBrush"   Color="#FFFFFFFF"/>
-    <SolidColorBrush x:Key="DangerBrush"             Color="#FFEF4444"/>
+    <!-- Space Marine - Ultramarines (deep blue + ceramite + gold) -->
+    <SolidColorBrush x:Key="BackgroundBrush"         Color="#FF0A1426"/>
+    <SolidColorBrush x:Key="SurfaceBrush"            Color="#FF142544"/>
+    <SolidColorBrush x:Key="SurfaceAltBrush"         Color="#FF1B315A"/>
+    <SolidColorBrush x:Key="BorderBrush"             Color="#FF2E4A7A"/>
+    <SolidColorBrush x:Key="ForegroundBrush"         Color="#FFEFE6CC"/>
+    <SolidColorBrush x:Key="MutedForegroundBrush"    Color="#FF8FA3C4"/>
+    <SolidColorBrush x:Key="AccentBrush"             Color="#FFE2B53A"/>
+    <SolidColorBrush x:Key="AccentForegroundBrush"   Color="#FF0A1426"/>
+    <SolidColorBrush x:Key="AccentSoftBrush"         Color="#FF1F3A66"/>
+    <SolidColorBrush x:Key="DangerBrush"             Color="#FFB72C26"/>
+    <SolidColorBrush x:Key="DangerForegroundBrush"   Color="#FFEFE6CC"/>
+    <SolidColorBrush x:Key="SuccessBrush"            Color="#FF4F8A3D"/>
 
 </ResourceDictionary>

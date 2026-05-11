@@ -21,8 +21,10 @@ public partial class JobListViewModel : ObservableObject
 
     public int Count => Jobs.Count;
     public bool IsEmpty => Jobs.Count == 0;
+    public bool HasJobs => Jobs.Count > 0;
     public bool IsFull => Jobs.Count >= AppConfig.MaxJobs;
     public bool HasAnyChecked => Jobs.Any(j => j.IsSelected);
+    public int SelectedCount => Jobs.Count(j => j.IsSelected);
 
     public void Refresh()
     {
@@ -42,14 +44,19 @@ public partial class JobListViewModel : ObservableObject
         }
         OnPropertyChanged(nameof(Count));
         OnPropertyChanged(nameof(IsEmpty));
+        OnPropertyChanged(nameof(HasJobs));
         OnPropertyChanged(nameof(IsFull));
         OnPropertyChanged(nameof(HasAnyChecked));
+        OnPropertyChanged(nameof(SelectedCount));
     }
 
     private void OnJobItemPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(JobItemViewModel.IsSelected))
+        {
             OnPropertyChanged(nameof(HasAnyChecked));
+            OnPropertyChanged(nameof(SelectedCount));
+        }
     }
 
     public JobItemViewModel? FindById(int id) =>
