@@ -65,7 +65,7 @@ public partial class JobFormViewModel : ObservableObject
     }
 
     [RelayCommand(CanExecute = nameof(CanSave))]
-    private void Save()
+    private async Task SaveAsync()
     {
         var job = new BackupJob
         {
@@ -76,7 +76,7 @@ public partial class JobFormViewModel : ObservableObject
             Type = Type
         };
 
-        if (Mode == JobFormMode.Create) _repo.AddJob(job);
-        else _repo.UpdateJob(Id, job);
+        if (Mode == JobFormMode.Create) await _repo.AddJobAsync(job).ConfigureAwait(false);
+        else await _repo.UpdateJobAsync(Id, job).ConfigureAwait(false);
     }
 }

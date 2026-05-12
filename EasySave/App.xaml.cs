@@ -32,7 +32,7 @@ public partial class App : Application
         // === Bootstrap CLIENT (UI/locale uniquement) ===
         var pathService     = new PathService();
         var settingsService = new SettingsService(pathService);
-        AppConfig.Settings  = settingsService.Current;
+        pathService.Bind(settingsService);
 
         Translator.Initialize(pathService.GetLangFilePath);
         Translator.LanguageChanged += SyncLocalizedResources;
@@ -58,7 +58,7 @@ public partial class App : Application
 
         _session.Connection.Disconnected += OnServerDisconnected;
 
-        MainViewModel = new MainViewModel(_session.Repository, _session.Engine, settingsService);
+        MainViewModel = new MainViewModel(_session.Repository, _session.Engine, settingsService, pathService);
 
         // Maintenant que la VM est prête, on ouvre la fenêtre principale.
         // (StartupUri retiré d'App.xaml pour pouvoir attendre la connexion.)

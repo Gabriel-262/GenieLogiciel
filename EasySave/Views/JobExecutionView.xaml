@@ -67,6 +67,17 @@
                                     <TextBlock Text="{Binding JobName, FallbackValue='—'}"
                                                FontSize="16" FontWeight="SemiBold" Margin="0,4,0,12"/>
 
+                                    <!-- Badge discret quand pause manuelle (pas un bandeau d'erreur) -->
+                                    <Border Background="#F39C12"
+                                            CornerRadius="4"
+                                            Padding="8,3"
+                                            HorizontalAlignment="Left"
+                                            Margin="0,0,0,8"
+                                            Visibility="{Binding IsPausedByUser, Converter={StaticResource BoolToVis}}">
+                                        <TextBlock Text="⏸ En pause"
+                                                   Foreground="White" FontWeight="SemiBold" FontSize="12"/>
+                                    </Border>
+
                                     <!-- Contrôles par job : Pause / Reprendre / Stop -->
                                     <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                                         <Button Content="⏸ Pause"

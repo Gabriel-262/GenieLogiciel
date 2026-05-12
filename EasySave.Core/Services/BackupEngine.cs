@@ -5,6 +5,12 @@ using EasySave.Models;
 
 namespace EasySave.Services;
 
+// Orchestre l'exécution des jobs : pause/stop, parallélisme, priorité,
+// progression, logs. Les sous-responsabilités sont déléguées à :
+//   - FileScanner       : énumération + partition prioritaires/normaux.
+//   - PriorityGate      : verrou global des fichiers non prioritaires.
+//   - CopyService       : copie cancellable + gate des gros fichiers.
+//   - JobController     : compteur de causes de pause + Stop par job.
 public class BackupEngine : IBackupEngine
 {
     private readonly JobRepository _repo;
@@ -12,15 +18,12 @@ public class BackupEngine : IBackupEngine
     private readonly IBusinessSoftwareMonitor? _businessMonitor;
     private readonly ICryptoSoft? _crypto;
     private readonly SettingsService? _settings;
+    private readonly FileScanner _scanner = new();
+    private readonly PriorityGate _priorityGate = new();
+    private readonly CopyService _copier = new();
 
-    // Un controller PAR job actif. Encapsule le compteur de causes de pause
-    // (User/Business/FileLocked) et le CancellationTokenSource pour le Stop.
+    // Un controller PAR job actif.
     private readonly ConcurrentDictionary<int, JobController> _controllers = new();
-
-    // Sérialise globalement la copie des fichiers >= LargeFileThresholdKb.
-    private readonly SemaphoreSlim _largeFileGate = new(1, 1);
-
-    private const int CopyBufferSize = 64 * 1024;
 
     public BackupEngine(JobRepository repo, ILogger logger,
         IBusinessSoftwareMonitor? businessMonitor = null,
@@ -48,35 +51,21 @@ public class BackupEngine : IBackupEngine
 
     // ===== API publique de contrôle =====
 
-    public void Pause(int jobId)        => AddReason(jobId, PauseReason.User);
-    public void Resume(int jobId)       => RemoveReason(jobId, PauseReason.User);
+    public void Pause(int jobId)  => AddReason(jobId, PauseReason.User);
+    public void Resume(int jobId) => RemoveReason(jobId, PauseReason.User);
     public void Stop(int jobId)
     {
         if (_controllers.TryGetValue(jobId, out var c)) c.RequestStop();
     }
 
-    public void PauseAll()
-    {
-        foreach (var id in _controllers.Keys) AddReason(id, PauseReason.User);
-    }
-    public void ResumeAll()
-    {
-        foreach (var id in _controllers.Keys) RemoveReason(id, PauseReason.User);
-    }
-    public void StopAll()
-    {
-        foreach (var c in _controllers.Values) c.RequestStop();
-    }
+    public void PauseAll()  { foreach (var id in _controllers.Keys) AddReason(id, PauseReason.User); }
+    public void ResumeAll() { foreach (var id in _controllers.Keys) RemoveReason(id, PauseReason.User); }
+    public void StopAll()   { foreach (var c in _controllers.Values) c.RequestStop(); }
 
-    // Appelés par BusinessSoftwareWatcher (cf. App.xaml.cs).
     public void PauseAllForBusinessSoftware()
-    {
-        foreach (var id in _controllers.Keys) AddReason(id, PauseReason.Business);
-    }
+    { foreach (var id in _controllers.Keys) AddReason(id, PauseReason.Business); }
     public void ResumeAllAfterBusinessSoftware()
-    {
-        foreach (var id in _controllers.Keys) RemoveReason(id, PauseReason.Business);
-    }
+    { foreach (var id in _controllers.Keys) RemoveReason(id, PauseReason.Business); }
 
     private void AddReason(int jobId, PauseReason reason)
     {
@@ -109,7 +98,12 @@ public class BackupEngine : IBackupEngine
                 await Task.Run(() =>
                 {
                     try { ExecuteJob(job); }
-                    catch { /* skip job en erreur, continue les autres */ }
+                    catch (Exception ex)
+                    {
+                        // Avant : catch { } silencieux. Maintenant on log
+                        // pour ne pas perdre la trace en cas de bug.
+                        LogJobError(job, ex);
+                    }
                 }, ct).ConfigureAwait(false);
             }
             finally { sem.Release(); }
@@ -129,18 +123,14 @@ public class BackupEngine : IBackupEngine
         if (!_controllers.TryAdd(job.Id, controller))
         {
             controller.Dispose();
-            return; // job déjà en cours
+            return;
         }
 
-        // Bridge controller -> events publics. Une seule souscription, durée
-        // de vie limitée à l'exécution du job.
         controller.Paused  += r => JobPaused?.Invoke(this,
             new JobLifecycleEventArgs { JobId = job.Id, JobName = job.Name, Reason = r });
         controller.Resumed += r => JobResumed?.Invoke(this,
             new JobLifecycleEventArgs { JobId = job.Id, JobName = job.Name, Reason = r });
 
-        // Si le logiciel métier tourne déjà : on entre directement en pause
-        // (cause Business). Le watcher lèvera la cause à la fermeture.
         if (_businessMonitor is not null && _businessMonitor.IsRunning())
         {
             controller.AddReason(PauseReason.Business);
@@ -148,38 +138,29 @@ public class BackupEngine : IBackupEngine
         }
 
         Directory.CreateDirectory(job.TargetPath);
-
         JobStarted?.Invoke(this, new JobLifecycleEventArgs { JobId = job.Id, JobName = job.Name });
+
         bool stopped = false;
         try
         {
-            var files = ScanDirectory(job.SourcePath);
-            long totalSize = files.Sum(f => f.Length);
-            int totalFiles = files.Count;
+            var scan = _scanner.Scan(job.SourcePath, IsPriority);
 
             _repo.UpdateState(job.Id, e =>
             {
                 e.Status = JobStatus.Active;
-                e.TotalFiles = totalFiles;
-                e.TotalSizeBytes = totalSize;
-                e.RemainingFiles = totalFiles;
-                e.RemainingSizeBytes = totalSize;
+                e.TotalFiles = scan.TotalFiles;
+                e.TotalSizeBytes = scan.TotalSizeBytes;
+                e.RemainingFiles = scan.TotalFiles;
+                e.RemainingSizeBytes = scan.TotalSizeBytes;
                 e.ProgressPercent = 0;
                 e.LastActionTime = DateTime.Now;
             });
 
+            int maxParallelFiles = Math.Max(1, _settings?.Current.MaxParallelFilesPerJob ?? 4);
+            var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = maxParallelFiles };
+
             int processed = 0;
             long bytesDone = 0;
-
-            int maxParallelFiles = Math.Max(1, _settings?.Current.MaxParallelFilesPerJob ?? 4);
-            // On ne passe PAS le StopToken à ParallelOptions : on préfère gérer
-            // l'arrêt à la main via IsStopRequested + return, pour éviter toute
-            // OperationCanceledException remontant du code utilisateur.
-            var parallelOptions = new ParallelOptions
-            {
-                MaxDegreeOfParallelism = maxParallelFiles
-            };
-
             var threadsUsed = new ConcurrentDictionary<int, byte>();
             var jobStopwatch = Stopwatch.StartNew();
 
@@ -192,98 +173,61 @@ public class BackupEngine : IBackupEngine
                 SourceFilePath = job.SourcePath,
                 DestinationFilePath = job.TargetPath,
                 MaxDegreeOfParallelism = maxParallelFiles,
-                ChunkCount = totalFiles,
+                ChunkCount = scan.TotalFiles,
                 ThreadId = Environment.CurrentManagedThreadId
             });
 
+            // Réserve auprès du gate global les fichiers prioritaires de ce job.
+            _priorityGate.Register(scan.PriorityFiles.Count);
+            int priorityDone = 0;
+
+            try
             {
-                Parallel.ForEach(files, parallelOptions, sourceFile =>
+                if (scan.PriorityFiles.Count > 0)
                 {
-                    if (controller.IsStopRequested) return;
-
-                    int tid = Environment.CurrentManagedThreadId;
-                    threadsUsed.TryAdd(tid, 0);
-
-                    // Pause = effective ICI, donc APRÈS le fichier précédent
-                    // et AVANT le suivant (conformément au CDC).
-                    controller.WaitIfPaused();
-                    if (controller.IsStopRequested) return;
-
-                    if (!WaitWhileFileLocked(sourceFile, job, controller)) return;
-
-                    sourceFile.Refresh();
-                    if (!sourceFile.Exists)
+                    // L'overload avec ParallelLoopState permet d'appeler state.Stop()
+                    // dès qu'on détecte le Stop utilisateur : Parallel.ForEach
+                    // cesse de dispatcher de nouvelles itérations, au lieu de
+                    // boucler en return rapide sur N fichiers restants.
+                    Parallel.ForEach(scan.PriorityFiles, parallelOptions, (sourceFile, state) =>
                     {
-                        int doneCount = Interlocked.Increment(ref processed);
-                        long doneBytes = Interlocked.Read(ref bytesDone);
-                        PushProgress(job, sourceFile.FullName, string.Empty,
-                            doneCount, totalFiles, doneBytes, totalSize);
-                        return;
-                    }
-
-                    string relative = Path.GetRelativePath(job.SourcePath, sourceFile.FullName);
-                    string destination = Path.Combine(job.TargetPath, relative);
-
-                    if (job.Type == BackupType.Differential && !NeedsCopy(sourceFile, destination))
-                    {
-                        int doneCount = Interlocked.Increment(ref processed);
-                        long doneBytes = Interlocked.Add(ref bytesDone, sourceFile.Length);
-                        PushProgress(job, sourceFile.FullName, destination,
-                            doneCount, totalFiles, doneBytes, totalSize);
-                        return;
-                    }
-
-                    string? destDir = Path.GetDirectoryName(destination);
-                    if (!string.IsNullOrEmpty(destDir)) Directory.CreateDirectory(destDir);
-
-                    bool existedBefore = File.Exists(destination);
-
-                    long thresholdBytes = (long)Math.Max(0, _settings?.Current.LargeFileThresholdKb ?? 0) * 1024;
-                    bool isLarge = thresholdBytes > 0 && sourceFile.Length >= thresholdBytes;
-                    if (isLarge) _largeFileGate.Wait();
-                    long elapsedMs;
-                    try
-                    {
-                        if (controller.IsStopRequested) return;
-                        elapsedMs = CopyFile(sourceFile.FullName, destination, controller.StopToken);
-                    }
-                    finally { if (isLarge) _largeFileGate.Release(); }
-                    if (controller.IsStopRequested) return;
-
-                    long cryptoMs = 0;
-                    if (_crypto is not null && elapsedMs >= 0 && ShouldEncrypt(sourceFile.FullName))
-                    {
-                        cryptoMs = _crypto.Encrypt(destination);
-                    }
-
-                    if (elapsedMs >= 0)
-                    {
-                        try { File.SetLastWriteTimeUtc(destination, sourceFile.LastWriteTimeUtc); }
-                        catch { /* horodatage best-effort */ }
-                    }
-
-                    _logger.Log(new LogEntry
-                    {
-                        Timestamp = DateTime.Now,
-                        JobId = job.Id,
-                        BackupName = job.Name,
-                        Action = existedBefore ? LogAction.Update : LogAction.Create,
-                        SourceFilePath = sourceFile.FullName,
-                        DestinationFilePath = destination,
-                        FileSizeBytes = sourceFile.Length,
-                        TransferTimeMs = elapsedMs,
-                        CryptoTimeMs = cryptoMs,
-                        ThreadId = tid
+                        if (controller.IsStopRequested) { state.Stop(); return; }
+                        try { ProcessFile(job, controller, sourceFile, isPriority: true,
+                                          scan.TotalFiles, scan.TotalSizeBytes, threadsUsed,
+                                          ref processed, ref bytesDone); }
+                        finally
+                        {
+                            Interlocked.Increment(ref priorityDone);
+                            _priorityGate.NotifyOneDone();
+                        }
                     });
+                }
 
-                    int processedSnap = Interlocked.Increment(ref processed);
-                    long bytesSnap = Interlocked.Add(ref bytesDone, sourceFile.Length);
-                    PushProgress(job, sourceFile.FullName, destination,
-                        processedSnap, totalFiles, bytesSnap, totalSize);
-                });
+                // Si on est sorti tôt (stop), rendre les crédits prioritaires
+                // restants au gate pour ne pas bloquer les autres jobs.
+                int leftover = scan.PriorityFiles.Count - Volatile.Read(ref priorityDone);
+                if (leftover > 0) _priorityGate.Release(leftover);
+
+                if (!controller.IsStopRequested && scan.NormalFiles.Count > 0)
+                {
+                    Parallel.ForEach(scan.NormalFiles, parallelOptions, (sourceFile, state) =>
+                    {
+                        if (controller.IsStopRequested) { state.Stop(); return; }
+                        ProcessFile(job, controller, sourceFile, isPriority: false,
+                                    scan.TotalFiles, scan.TotalSizeBytes, threadsUsed,
+                                    ref processed, ref bytesDone);
+                    });
+                }
             }
-            stopped = controller.IsStopRequested;
+            finally
+            {
+                // Filet : si quelque chose a explosé, on ne laisse pas de crédit
+                // prioritaire fantôme dans le gate.
+                int residual = scan.PriorityFiles.Count - Volatile.Read(ref priorityDone);
+                if (residual > 0) _priorityGate.Release(residual);
+            }
 
+            stopped = controller.IsStopRequested;
             jobStopwatch.Stop();
 
             _logger.Log(new LogEntry
@@ -294,11 +238,11 @@ public class BackupEngine : IBackupEngine
                 Action = stopped ? LogAction.JobStopped : LogAction.JobCompleted,
                 SourceFilePath = job.SourcePath,
                 DestinationFilePath = job.TargetPath,
-                FileSizeBytes = totalSize,
+                FileSizeBytes = scan.TotalSizeBytes,
                 TransferTimeMs = jobStopwatch.ElapsedMilliseconds,
                 MaxDegreeOfParallelism = maxParallelFiles,
                 ThreadsUsed = threadsUsed.Count,
-                ChunkCount = totalFiles,
+                ChunkCount = scan.TotalFiles,
                 ThreadId = Environment.CurrentManagedThreadId
             });
         }
@@ -312,13 +256,87 @@ public class BackupEngine : IBackupEngine
         }
     }
 
-    // ------------------------------------------------------------------------
-    // Si le fichier source est verrouillé : on ajoute la cause FileLocked au
-    // controller, et on attend (signal pause + check stop) jusqu'à libération.
-    // ------------------------------------------------------------------------
-    // Retourne true si le fichier est libre (ou l'est devenu), false si Stop
-    // a été demandé pendant l'attente. Le caller doit alors abandonner ce
-    // fichier et sortir.
+    // Corps de traitement d'un fichier (appelé en parallèle).
+    private void ProcessFile(BackupJob job, JobController controller, FileInfo sourceFile, bool isPriority,
+        int totalFiles, long totalSize, ConcurrentDictionary<int, byte> threadsUsed,
+        ref int processed, ref long bytesDone)
+    {
+        if (controller.IsStopRequested) return;
+
+        // Les non prioritaires attendent que le gate global soit ouvert.
+        if (!isPriority)
+        {
+            _priorityGate.WaitForNoPriority();
+            if (controller.IsStopRequested) return;
+        }
+
+        threadsUsed.TryAdd(Environment.CurrentManagedThreadId, 0);
+
+        // Pause = effective ICI, donc APRÈS le fichier précédent et AVANT le
+        // suivant (conformément au CDC).
+        controller.WaitIfPaused();
+        if (controller.IsStopRequested) return;
+
+        if (!WaitWhileFileLocked(sourceFile, job, controller)) return;
+
+        sourceFile.Refresh();
+        if (!sourceFile.Exists)
+        {
+            int doneCount = Interlocked.Increment(ref processed);
+            long doneBytes = Interlocked.Read(ref bytesDone);
+            PushProgress(job, sourceFile.FullName, string.Empty, doneCount, totalFiles, doneBytes, totalSize);
+            return;
+        }
+
+        string relative = Path.GetRelativePath(job.SourcePath, sourceFile.FullName);
+        string destination = Path.Combine(job.TargetPath, relative);
+
+        if (job.Type == BackupType.Differential && !NeedsCopy(sourceFile, destination))
+        {
+            int doneCount = Interlocked.Increment(ref processed);
+            long doneBytes = Interlocked.Add(ref bytesDone, sourceFile.Length);
+            PushProgress(job, sourceFile.FullName, destination, doneCount, totalFiles, doneBytes, totalSize);
+            return;
+        }
+
+        string? destDir = Path.GetDirectoryName(destination);
+        if (!string.IsNullOrEmpty(destDir)) Directory.CreateDirectory(destDir);
+
+        bool existedBefore = File.Exists(destination);
+        long thresholdBytes = (long)Math.Max(0, _settings?.Current.LargeFileThresholdKb ?? 0) * 1024;
+
+        long elapsedMs = _copier.Copy(sourceFile.FullName, destination, thresholdBytes, controller.StopToken);
+        if (controller.IsStopRequested) return;
+
+        long cryptoMs = 0;
+        if (_crypto is not null && elapsedMs >= 0 && ShouldEncrypt(sourceFile.FullName))
+            cryptoMs = _crypto.Encrypt(destination);
+
+        if (elapsedMs >= 0)
+        {
+            try { File.SetLastWriteTimeUtc(destination, sourceFile.LastWriteTimeUtc); }
+            catch { /* horodatage best-effort */ }
+        }
+
+        _logger.Log(new LogEntry
+        {
+            Timestamp = DateTime.Now,
+            JobId = job.Id,
+            BackupName = job.Name,
+            Action = existedBefore ? LogAction.Update : LogAction.Create,
+            SourceFilePath = sourceFile.FullName,
+            DestinationFilePath = destination,
+            FileSizeBytes = sourceFile.Length,
+            TransferTimeMs = elapsedMs,
+            CryptoTimeMs = cryptoMs,
+            ThreadId = Environment.CurrentManagedThreadId
+        });
+
+        int processedSnap = Interlocked.Increment(ref processed);
+        long bytesSnap = Interlocked.Add(ref bytesDone, sourceFile.Length);
+        PushProgress(job, sourceFile.FullName, destination, processedSnap, totalFiles, bytesSnap, totalSize);
+    }
+
     private bool WaitWhileFileLocked(FileInfo sourceFile, BackupJob job, JobController controller)
     {
         if (!IsFileLocked(sourceFile)) return true;
@@ -386,6 +404,21 @@ public class BackupEngine : IBackupEngine
         });
     }
 
+    private void LogJobError(BackupJob job, Exception ex)
+    {
+        _logger.Log(new LogEntry
+        {
+            Timestamp = DateTime.Now,
+            JobId = job.Id,
+            BackupName = job.Name,
+            Action = LogAction.JobStopped,
+            SourceFilePath = job.SourcePath,
+            DestinationFilePath = $"ERROR: {ex.GetType().Name}: {ex.Message}",
+            FileSizeBytes = 0,
+            TransferTimeMs = 0
+        });
+    }
+
     private void PushProgress(BackupJob job, string sourceFile, string destinationFile,
         int processed, int totalFiles, long bytesDone, long totalBytes)
     {
@@ -415,6 +448,16 @@ public class BackupEngine : IBackupEngine
         });
     }
 
+    private bool IsPriority(string sourceFilePath)
+    {
+        var extensions = _settings?.Current.PriorityExtensions;
+        if (extensions is null || extensions.Count == 0) return false;
+        string ext = Path.GetExtension(sourceFilePath);
+        if (string.IsNullOrEmpty(ext)) return false;
+        return extensions.Any(e => string.Equals(
+            NormalizeExtension(e), ext, StringComparison.OrdinalIgnoreCase));
+    }
+
     private bool ShouldEncrypt(string sourceFilePath)
     {
         var extensions = _settings?.Current.EncryptedExtensions;
@@ -432,65 +475,11 @@ public class BackupEngine : IBackupEngine
         return ext.StartsWith('.') ? ext : "." + ext;
     }
 
-    private static List<FileInfo> ScanDirectory(string root)
-        => new DirectoryInfo(root)
-            .EnumerateFiles("*", SearchOption.AllDirectories)
-            .Where(f => !f.Name.StartsWith("~$"))
-            .ToList();
-
     private static bool NeedsCopy(FileInfo source, string destinationPath)
     {
         if (!File.Exists(destinationPath)) return true;
         DateTime sourceTime = source.LastWriteTimeUtc;
         DateTime destTime   = File.GetLastWriteTimeUtc(destinationPath);
         return Math.Abs((sourceTime - destTime).TotalSeconds) > 2;
-    }
-
-    // Copie cancellable : check du token toutes les 64 Ko. Si annulée, ferme
-    // les streams, supprime la copie partielle, et retourne 0 (pas d'OCE
-    // levée vers le code utilisateur). Le caller détecte l'annulation via
-    // controller.IsStopRequested après l'appel.
-    private static long CopyFile(string source, string destination, CancellationToken ct)
-    {
-        var sw = Stopwatch.StartNew();
-        bool canceled = false;
-        try
-        {
-            using (var src = new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.Read,
-                                            CopyBufferSize, FileOptions.SequentialScan))
-            using (var dst = new FileStream(destination, FileMode.Create, FileAccess.Write, FileShare.None,
-                                            CopyBufferSize, FileOptions.SequentialScan))
-            {
-                var buffer = new byte[CopyBufferSize];
-                int read;
-                while ((read = src.Read(buffer, 0, buffer.Length)) > 0)
-                {
-                    if (ct.IsCancellationRequested)
-                    {
-                        canceled = true;
-                        break;
-                    }
-                    dst.Write(buffer, 0, read);
-                }
-            }
-            sw.Stop();
-            if (canceled)
-            {
-                TryDelete(destination);
-                return 0;
-            }
-            return sw.ElapsedMilliseconds;
-        }
-        catch
-        {
-            sw.Stop();
-            TryDelete(destination);
-            return -sw.ElapsedMilliseconds;
-        }
-    }
-
-    private static void TryDelete(string path)
-    {
-        try { if (File.Exists(path)) File.Delete(path); } catch { /* best-effort */ }
     }
 }

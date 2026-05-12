@@ -85,7 +85,7 @@ public class ConsoleMenu
         _vm.JobList.Refresh();
         if (_vm.JobList.IsFull)
         {
-            Console.WriteLine(string.Format(Translator.Get("Error_MaxJobs"), AppConfig.MaxJobs));
+            Console.WriteLine(string.Format(Translator.Get("Error_MaxJobs"), _vm.JobList.MaxJobs));
             Wait();
             return;
         }
@@ -220,7 +220,9 @@ public class ConsoleMenu
             Console.WriteLine($"{Translator.Get("Settings_BackKey")}: [{_vm.Settings.BackKey}]");
             Console.WriteLine($"{Translator.Get("Settings_LogFormat")}: [{_vm.Settings.LogFormat.ToUpperInvariant()}]");
             Console.WriteLine($"{Translator.Get("Settings_Paths")}");
-            Console.WriteLine(Translator.Get("Settings_Back"));
+            Console.WriteLine($"5. {Translator.Get("UI_Settings_Priority")} " +
+                              $"[{string.Join(", ", _vm.Settings.PriorityExtensions)}]");
+            Console.WriteLine($"6. {Translator.Get("Settings_Back")}");
             Console.WriteLine();
             Console.Write(Translator.Get("Prompt_Choice"));
 
@@ -233,7 +235,63 @@ public class ConsoleMenu
                 case "2": ChangeBackKey();                                   break;
                 case "3": _vm.Settings.ToggleLogFormatCommand.Execute(null); break;
                 case "4": PathsMenu();                                       break;
-                case "5": return;
+                case "5": PriorityExtensionsMenu();                          break;
+                case "6": return;
+                default:
+                    Console.WriteLine(Translator.Get("Error_InvalidChoice"));
+                    Wait();
+                    break;
+            }
+        }
+    }
+
+    private void PriorityExtensionsMenu()
+    {
+        while (true)
+        {
+            Console.Clear();
+            Console.WriteLine(Translator.Get("UI_Settings_Priority"));
+            Console.WriteLine(BackHint());
+            Console.WriteLine();
+            Console.WriteLine(Translator.Get("UI_Settings_PriorityDesc"));
+            Console.WriteLine();
+
+            var list = _vm.Settings.PriorityExtensions.ToList();
+            if (list.Count == 0)
+            {
+                Console.WriteLine("(none)");
+            }
+            else
+            {
+                for (int i = 0; i < list.Count; i++)
+                    Console.WriteLine($"  [{i + 1}] {list[i]}");
+            }
+            Console.WriteLine();
+            Console.WriteLine("1. Add");
+            Console.WriteLine("2. Remove");
+            Console.WriteLine("3. " + Translator.Get("Settings_Back"));
+            Console.WriteLine();
+            Console.Write(Translator.Get("Prompt_Choice"));
+
+            string? input = Console.ReadLine()?.Trim();
+            if (IsBack(input)) return;
+
+            switch (input)
+            {
+                case "1":
+                    Console.Write("Extension (.ext): ");
+                    string? ext = Console.ReadLine();
+                    if (ext is null || IsBack(ext)) break;
+                    _vm.Settings.AddPriorityExtensionCommand.Execute(ext.Trim());
+                    break;
+                case "2":
+                    Console.Write(Translator.Get("Prompt_Choice"));
+                    string? raw = Console.ReadLine()?.Trim();
+                    if (raw is null || IsBack(raw)) break;
+                    if (int.TryParse(raw, out int idx) && idx >= 1 && idx <= list.Count)
+                        _vm.Settings.RemovePriorityExtensionCommand.Execute(list[idx - 1]);
+                    break;
+                case "3": return;
                 default:
                     Console.WriteLine(Translator.Get("Error_InvalidChoice"));
                     Wait();

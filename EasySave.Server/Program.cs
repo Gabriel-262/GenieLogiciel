@@ -23,10 +23,10 @@ for (int i = 0; i < args.Length; i++)
 
 var pathService     = new PathService();
 var settingsService = new SettingsService(pathService);
-AppConfig.Settings  = settingsService.Current;
+pathService.Bind(settingsService);
 
-var repo   = new JobRepository(pathService);
-ILogger logger = LoggerFactory.Create(AppConfig.LogFormat, pathService.GetLogDirectory);
+var repo   = new JobRepository(pathService, settingsService);
+ILogger logger = LoggerFactory.Create(settingsService.LogFormat, pathService.GetLogDirectory);
 repo.SetLogger(logger);
 
 var businessMonitor = new ProcessMonitorService(

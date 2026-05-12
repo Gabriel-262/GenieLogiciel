@@ -28,15 +28,16 @@ public partial class MainViewModel : ObservableObject
     public MainViewModel(
         IJobRepository repo,
         IBackupEngine engine,
-        SettingsService settings)
+        SettingsService settings,
+        PathService paths)
     {
         _ui = SynchronizationContext.Current;
 
-        JobList = new JobListViewModel(repo, engine);
+        JobList = new JobListViewModel(repo, engine, settings);
         JobForm = new JobFormViewModel(repo);
         Settings = new SettingsViewModel(settings);
         Execution = new JobExecutionViewModel(engine);
-        Logs = new LogsViewModel();
+        Logs = new LogsViewModel(paths);
 
         engine.JobStarted += OnJobStarted;
         engine.JobCompleted += OnJobCompleted;

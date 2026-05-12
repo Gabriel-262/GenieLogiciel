@@ -6,13 +6,12 @@ namespace EasySave.Client;
 
 // IJobRepository côté client : lit la liste de jobs depuis un cache local
 // alimenté par le snapshot initial + l'event evt.jobs.changed. Les écritures
-// (Add/Update/Delete) sont synchrones du point de vue VM mais font un
-// aller-retour réseau bloquant (les VMs appellent ces méthodes en réponse
-// à un clic, donc une latence LAN est acceptable).
+// (Add/Update/Delete) font un aller-retour réseau ; les VMs DOIVENT utiliser
+// les versions async pour ne pas bloquer le thread UI.
 //
-// Les VMs ne reçoivent PAS d'event "JobsChanged" : elles appellent Refresh()
-// après chaque CRUD. Pour reflet inter-clients, l'appli abonne un handler à
-// BackupServerConnection.EventReceived et déclenche Refresh().
+// Les versions sync sont conservées pour la CLI (qui tourne hors thread UI),
+// mais elles utilisent quand même le bridge sync-over-async — à éviter dans
+// du code GUI.
 public sealed class RemoteJobRepository : IJobRepository
 {
     private readonly BackupServerConnection _conn;
@@ -49,20 +48,23 @@ public sealed class RemoteJobRepository : IJobRepository
         }
     }
 
-    public BackupJob AddJob(BackupJob job)
+    // ====== Async (à privilégier depuis le code UI) ======
+
+    public async Task<BackupJob> AddJobAsync(BackupJob job, CancellationToken ct = default)
     {
-        var rsp = SendSync(MessageTypes.CmdAddJob, new AddJobPayload { Job = job.ToDto() });
+        var rsp = await _conn.SendCommandAsync(
+            MessageTypes.CmdAddJob, new AddJobPayload { Job = job.ToDto() }, ct).ConfigureAwait(false);
         var payload = rsp.TryDecode<JobPayload>()
             ?? throw new InvalidOperationException("Réponse AddJob invalide.");
         var added = payload.Job.FromDto();
-        // Mise à jour locale immédiate ; l'event evt.jobs.changed la confirmera.
         lock (_lock) _cache.Add(Clone(added));
         return added;
     }
 
-    public bool UpdateJob(int id, BackupJob updated)
+    public async Task<bool> UpdateJobAsync(int id, BackupJob updated, CancellationToken ct = default)
     {
-        var rsp = SendSync(MessageTypes.CmdUpdateJob, new UpdateJobPayload { Id = id, Job = updated.ToDto() });
+        var rsp = await _conn.SendCommandAsync(
+            MessageTypes.CmdUpdateJob, new UpdateJobPayload { Id = id, Job = updated.ToDto() }, ct).ConfigureAwait(false);
         if (rsp.Type == MessageTypes.RspError) return false;
         lock (_lock)
         {
@@ -78,23 +80,20 @@ public sealed class RemoteJobRepository : IJobRepository
         return true;
     }
 
-    public bool DeleteJob(int id)
+    public async Task<bool> DeleteJobAsync(int id, CancellationToken ct = default)
     {
-        var rsp = SendSync(MessageTypes.CmdDeleteJob, new JobIdPayload { JobId = id });
+        var rsp = await _conn.SendCommandAsync(
+            MessageTypes.CmdDeleteJob, new JobIdPayload { JobId = id }, ct).ConfigureAwait(false);
         if (rsp.Type == MessageTypes.RspError) return false;
         lock (_lock) _cache.RemoveAll(j => j.Id == id);
         return true;
     }
 
-    private Envelope SendSync(string type, object? payload)
-    {
-        // Les VMs sont synchrones dans leurs commandes CRUD. On bloque le
-        // thread courant le temps de l'aller-retour. Pour la WPF, ces appels
-        // viennent du thread UI lors d'un clic : la latence LAN est faible
-        // (~quelques ms) donc acceptable. Si on voulait un vrai async, il
-        // faudrait async-iser IJobRepository — gros changement aux VMs.
-        return _conn.SendCommandAsync(type, payload).GetAwaiter().GetResult();
-    }
+    // ====== Sync (CLI uniquement — bloque le thread courant) ======
+
+    public BackupJob AddJob(BackupJob job)        => AddJobAsync(job).GetAwaiter().GetResult();
+    public bool UpdateJob(int id, BackupJob job)  => UpdateJobAsync(id, job).GetAwaiter().GetResult();
+    public bool DeleteJob(int id)                 => DeleteJobAsync(id).GetAwaiter().GetResult();
 
     private void OnEventReceived(object? sender, Envelope env)
     {

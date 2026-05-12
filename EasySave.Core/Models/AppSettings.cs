@@ -20,6 +20,11 @@ public class AppSettings
 
     public List<string> EncryptedExtensions { get; set; } = new();
 
+    // Extensions prioritaires : un fichier non-prioritaire ne peut pas être
+    // copié tant qu'il reste, dans l'ensemble des jobs en cours, au moins un
+    // fichier dont l'extension figure dans cette liste à traiter.
+    public List<string> PriorityExtensions { get; set; } = new();
+
     // "Rapide" (XOR), "Standard" (AES) ou "Premium" (ECIES: ECDH P-256 + AES-GCM)
     public string CryptoMode { get; set; } = "Rapide";
 

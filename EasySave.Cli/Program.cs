@@ -11,7 +11,7 @@ Console.OutputEncoding = Encoding.UTF8;
 
 var pathService     = new PathService();
 var settingsService = new SettingsService(pathService);
-AppConfig.Settings  = settingsService.Current;
+pathService.Bind(settingsService);
 
 Translator.Initialize(pathService.GetLangFilePath);
 Translator.SetLanguage(settingsService.Current.Language);
@@ -55,7 +55,7 @@ if (args.Length > 0)
     return;
 }
 
-var mainVm = new MainViewModel(session.Repository, session.Engine, settingsService);
+var mainVm = new MainViewModel(session.Repository, session.Engine, settingsService, pathService);
 var menu = new ConsoleMenu(mainVm);
 menu.Run();
 

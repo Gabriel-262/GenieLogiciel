@@ -5,11 +5,15 @@ using System.Xml.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using EasyLog;
+using EasySave.Services;
 
 namespace EasySave.ViewModels;
 
 public partial class LogsViewModel : ObservableObject
 {
+    private readonly PathService _paths;
+
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -28,8 +32,9 @@ public partial class LogsViewModel : ObservableObject
 
     public bool HasSelection => SelectedFile is not null;
 
-    public LogsViewModel()
+    public LogsViewModel(PathService paths)
     {
+        _paths = paths;
         Refresh();
     }
 
@@ -41,7 +46,7 @@ public partial class LogsViewModel : ObservableObject
     [RelayCommand]
     public void Refresh()
     {
-        LogDirectory = AppConfig.LogDirectory;
+        LogDirectory = _paths.GetLogDirectory();
 
         var previousPath = SelectedFile?.FullPath;
         Files.Clear();
