@@ -92,7 +92,8 @@ internal static class DtoMapper
     {
         JobId = e.JobId,
         JobName = e.JobName,
-        Reason = e.Reason?.ToDto()
+        Reason = e.Reason?.ToDto(),
+        Detail = e.Detail
     };
 
     public static ServerSettingsDto ToServerDto(this AppSettings s) => new()

@@ -132,9 +132,12 @@ public partial class JobExecutionViewModel : ObservableObject, IDisposable
         var item = FindOrAdd(e.JobId, e.JobName, addIfMissing: true)!;
         item.IsPaused = true;
         item.PauseReason = e.Reason;
+        item.PauseDetail = e.Detail;
 
         if (e.Reason == PauseReason.Business)
-            BusinessSoftwareAlert = "Logiciel métier détecté — toutes les sauvegardes sont en pause.";
+            BusinessSoftwareAlert = string.IsNullOrEmpty(e.Detail)
+                ? "Logiciel métier détecté — toutes les sauvegardes sont en pause."
+                : $"Logiciel métier « {e.Detail} » détecté — toutes les sauvegardes sont en pause.";
 
         NotifyAggregates();
     });
@@ -146,6 +149,7 @@ public partial class JobExecutionViewModel : ObservableObject, IDisposable
         {
             item.IsPaused = false;
             item.PauseReason = null;
+            item.PauseDetail = null;
         }
 
         if (e.Reason == PauseReason.Business && !Jobs.Any(j => j.PauseReason == PauseReason.Business))

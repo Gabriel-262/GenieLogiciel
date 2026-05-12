@@ -62,6 +62,7 @@ internal static class RemoteDtoMapper
     {
         JobId = d.JobId,
         JobName = d.JobName ?? string.Empty,
-        Reason = d.Reason?.FromDto()
+        Reason = d.Reason?.FromDto(),
+        Detail = d.Detail
     };
 }

@@ -70,6 +70,7 @@ public sealed class JobLifecycleDto
     public int JobId { get; set; }
     public string JobName { get; set; } = string.Empty;
     public PauseReasonDto? Reason { get; set; }
+    public string? Detail { get; set; }
 }
 
 // Settings exposés au client. Ne contient QUE les champs pertinents pour le

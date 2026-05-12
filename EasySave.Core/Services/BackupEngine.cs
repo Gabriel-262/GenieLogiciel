@@ -52,18 +52,29 @@ public class BackupEngine : IBackupEngine
     // ===== API publique de contrôle =====
 
     public void Pause(int jobId)  => AddReason(jobId, PauseReason.User);
-    public void Resume(int jobId) => RemoveReason(jobId, PauseReason.User);
+
+    // Resume utilisateur = FORCE-RESUME : enlève toutes les causes (User ET
+    // Business). Choix produit : une fois en pause, seul l'utilisateur peut
+    // décider de reprendre. Le logiciel métier qui se ferme ne réveille plus
+    // automatiquement le job.
+    public void Resume(int jobId) => ForceResume(jobId);
     public void Stop(int jobId)
     {
         if (_controllers.TryGetValue(jobId, out var c)) c.RequestStop();
     }
 
     public void PauseAll()  { foreach (var id in _controllers.Keys) AddReason(id, PauseReason.User); }
-    public void ResumeAll() { foreach (var id in _controllers.Keys) RemoveReason(id, PauseReason.User); }
+    public void ResumeAll() { foreach (var id in _controllers.Keys) ForceResume(id); }
     public void StopAll()   { foreach (var c in _controllers.Values) c.RequestStop(); }
 
     public void PauseAllForBusinessSoftware()
-    { foreach (var id in _controllers.Keys) AddReason(id, PauseReason.Business); }
+    {
+        var name = _settings?.Current.BusinessSoftwareName;
+        foreach (var id in _controllers.Keys)
+            if (_controllers.TryGetValue(id, out var c)) c.AddReason(PauseReason.Business, name);
+    }
+    // Conservé pour compat API. Plus appelé par le watcher : la reprise est
+    // désormais manuelle (cf. Server/Program.cs).
     public void ResumeAllAfterBusinessSoftware()
     { foreach (var id in _controllers.Keys) RemoveReason(id, PauseReason.Business); }
 
@@ -74,6 +85,16 @@ public class BackupEngine : IBackupEngine
     private void RemoveReason(int jobId, PauseReason reason)
     {
         if (_controllers.TryGetValue(jobId, out var c)) c.RemoveReason(reason);
+    }
+
+    // Enlève TOUTES les causes actives du job. Une fois en pause (quelle que
+    // soit la cause : User, Business, FileLocked), seul le clic Reprendre
+    // utilisateur fait sortir le job. Plus de reprise auto.
+    private void ForceResume(int jobId)
+    {
+        if (!_controllers.TryGetValue(jobId, out var c)) return;
+        foreach (var r in c.ActiveReasons)
+            c.RemoveReason(r);
     }
 
     // ===== Exécution =====
@@ -126,14 +147,14 @@ public class BackupEngine : IBackupEngine
             return;
         }
 
-        controller.Paused  += r => JobPaused?.Invoke(this,
-            new JobLifecycleEventArgs { JobId = job.Id, JobName = job.Name, Reason = r });
+        controller.Paused  += (r, detail) => JobPaused?.Invoke(this,
+            new JobLifecycleEventArgs { JobId = job.Id, JobName = job.Name, Reason = r, Detail = detail });
         controller.Resumed += r => JobResumed?.Invoke(this,
             new JobLifecycleEventArgs { JobId = job.Id, JobName = job.Name, Reason = r });
 
         if (_businessMonitor is not null && _businessMonitor.IsRunning())
         {
-            controller.AddReason(PauseReason.Business);
+            controller.AddReason(PauseReason.Business, _settings?.Current.BusinessSoftwareName);
             LogBusinessSoftwareDetected(job);
         }
 
@@ -341,7 +362,7 @@ public class BackupEngine : IBackupEngine
     {
         if (!IsFileLocked(sourceFile)) return true;
 
-        controller.AddReason(PauseReason.FileLocked);
+        controller.AddReason(PauseReason.FileLocked, sourceFile.FullName);
         try
         {
             _repo.UpdateState(job.Id, e =>
@@ -363,17 +384,28 @@ public class BackupEngine : IBackupEngine
                 TransferTimeMs = 0
             });
 
+            // 1) Boucle de polling : on attend que le fichier soit libéré.
             while (IsFileLocked(sourceFile))
             {
                 if (controller.IsStopRequested) return false;
                 Thread.Sleep(500);
                 sourceFile.Refresh();
             }
-            return true;
+
+            // 2) Fichier libéré, mais on NE retire PAS la cause FileLocked
+            // automatiquement : seul le clic Reprendre utilisateur peut sortir
+            // le job de pause. Le signal reste Reset → le thread bloque ici
+            // jusqu'à ForceResume.
+            controller.WaitIfPaused();
+            return !controller.IsStopRequested;
         }
         finally
         {
-            controller.RemoveReason(PauseReason.FileLocked);
+            // Safety net : si Stop a été demandé, on enlève la cause pour
+            // libérer les éventuels autres threads parqués. ForceResume aura
+            // déjà fait le job dans le cas nominal.
+            if (controller.IsStopRequested)
+                controller.RemoveReason(PauseReason.FileLocked);
         }
     }
 

@@ -44,8 +44,20 @@ var engine = new BackupEngine(repo, logger,
     settings: settingsService);
 
 var businessWatcher = new BusinessSoftwareWatcher(businessMonitor, intervalMs: 1000);
-businessWatcher.Started += (_, _) => engine.PauseAllForBusinessSoftware();
-businessWatcher.Stopped += (_, _) => engine.ResumeAllAfterBusinessSoftware();
+businessWatcher.Started += (_, _) =>
+{
+    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] WATCHER.Started -> PauseAllForBusinessSoftware");
+    engine.PauseAllForBusinessSoftware();
+};
+businessWatcher.Stopped += (_, _) =>
+{
+    // Trace seulement. La reprise est manuelle (cf. BackupEngine.Resume).
+    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] WATCHER.Stopped (logiciel métier fermé) — aucune action serveur");
+};
+
+// Trace lifecycle pour diagnostiquer l'éventuelle reprise auto.
+engine.JobPaused  += (_, e) => Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] JobPaused  jobId={e.JobId} reason={e.Reason}");
+engine.JobResumed += (_, e) => Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] JobResumed jobId={e.JobId} reason={e.Reason}");
 
 var server = new TcpBackupServer(engine, repo, settingsService, bind, port);
 server.Start();

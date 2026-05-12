@@ -26,18 +26,20 @@ public sealed class JobController : IDisposable
     }
 
     // Levé quand la 1re cause apparaît (transition non-pausé -> pausé).
-    public event Action<PauseReason>? Paused;
+    // Le 2e param transporte un contexte (chemin du fichier verrouillé,
+    // nom du process métier...) destiné à l'UI.
+    public event Action<PauseReason, string?>? Paused;
     // Levé quand la dernière cause disparaît (transition pausé -> non-pausé).
     public event Action<PauseReason>? Resumed;
 
-    public void AddReason(PauseReason reason)
+    public void AddReason(PauseReason reason, string? detail = null)
     {
         lock (_lock)
         {
             bool wasEmpty = _reasons.Count == 0;
             if (!_reasons.Add(reason)) return;
             _signal.Reset();
-            if (wasEmpty) Paused?.Invoke(reason);
+            if (wasEmpty) Paused?.Invoke(reason, detail);
         }
     }
 

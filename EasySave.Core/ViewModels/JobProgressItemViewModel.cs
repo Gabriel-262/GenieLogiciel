@@ -32,6 +32,10 @@ public partial class JobProgressItemViewModel : ObservableObject
     // Cause courante de la pause ; null = pas en pause.
     [ObservableProperty] private PauseReason? pauseReason;
 
+    // Contexte additionnel : pour FileLocked = chemin du fichier verrouillé,
+    // pour Business = nom du process métier détecté.
+    [ObservableProperty] private string? pauseDetail;
+
     // Vrai uniquement pour les pauses "subies" (logiciel métier ou fichier
     // verrouillé). Pour ces pauses on affiche le bandeau orange (erreur).
     public bool IsPausedForError =>
@@ -44,8 +48,14 @@ public partial class JobProgressItemViewModel : ObservableObject
 
     public string ErrorMessage => PauseReason switch
     {
-        Services.PauseReason.Business   => "Logiciel métier détecté — la sauvegarde reprendra automatiquement à sa fermeture.",
-        Services.PauseReason.FileLocked => "Fichier verrouillé par une autre application — reprise automatique dès libération.",
+        Services.PauseReason.Business   =>
+            string.IsNullOrEmpty(PauseDetail)
+                ? "Logiciel métier détecté. Cliquez sur Reprendre pour relancer la sauvegarde."
+                : $"Logiciel métier « {PauseDetail} » détecté. Cliquez sur Reprendre pour relancer la sauvegarde.",
+        Services.PauseReason.FileLocked =>
+            string.IsNullOrEmpty(PauseDetail)
+                ? "Fichier verrouillé par une autre application. Fermez-la puis cliquez sur Reprendre."
+                : $"Fichier verrouillé par une autre application : {PauseDetail}\nFermez l'application qui l'utilise puis cliquez sur Reprendre.",
         _ => string.Empty
     };
 
@@ -55,6 +65,8 @@ public partial class JobProgressItemViewModel : ObservableObject
         OnPropertyChanged(nameof(IsPausedByUser));
         OnPropertyChanged(nameof(ErrorMessage));
     }
+    partial void OnPauseDetailChanged(string? value)
+        => OnPropertyChanged(nameof(ErrorMessage));
     partial void OnIsPausedChanged(bool value)
     {
         OnPropertyChanged(nameof(IsPausedForError));
