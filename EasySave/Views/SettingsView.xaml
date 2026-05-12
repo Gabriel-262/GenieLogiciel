@@ -232,7 +232,7 @@
                                   SelectedValue="{Binding CryptoMode, Mode=TwoWay}">
                             <ComboBoxItem Content="Rapide"   Tag="Rapide"/>
                             <ComboBoxItem Content="Standard" Tag="Standard"/>
-                            <ComboBoxItem Content="Premium"  Tag="Premium"/>
+                            <ComboBoxItem Content="Performant"  Tag="Premium"/>
                         </ComboBox>
                     </Grid>
 

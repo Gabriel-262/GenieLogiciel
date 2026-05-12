@@ -120,7 +120,7 @@
   "UI_Settings_Encryption": "Cryptache (CryptoSoft)",
   "UI_Settings_EncryptionDesc": "Extensions ed'fichiers cryptées après copie.",
   "UI_Settings_Mode": "Mode",
-  "UI_Settings_ToggleCryptoMode": "Cangér (Rapide / Standard / Premium)",
+  "UI_Settings_ToggleCryptoMode": "Cangér (Rapide / Standard / Performant)",
   "UI_Settings_Extensions": "Extensions",
   "UI_Settings_PathsHeader": "Chemins (faut r'lancher pour qu'cha marche)",
   "UI_Path_Log": "Logs",

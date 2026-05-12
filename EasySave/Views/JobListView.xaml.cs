@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using EasySave.Resources;
 using EasySave.ViewModels;
 
@@ -96,5 +97,11 @@ public partial class JobListView : UserControl
     private void Refresh_Click(object sender, RoutedEventArgs e)
     {
         Vm.JobList.Refresh();
+    }
+
+    private void JobCard_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not FrameworkElement fe || fe.DataContext is not JobItemViewModel item) return;
+        item.IsSelected = !item.IsSelected;
     }
 }

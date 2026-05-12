@@ -112,7 +112,7 @@
   "UI_Settings_Encryption": "加密 (CryptoSoft)",
   "UI_Settings_EncryptionDesc": "复制后加密的文件扩展名。",
   "UI_Settings_Mode": "模式",
-  "UI_Settings_ToggleCryptoMode": "切换 (Rapide / Standard / Premium)",
+  "UI_Settings_ToggleCryptoMode": "切换 (Rapide / Standard / Performant)",
   "UI_Settings_Extensions": "扩展名",
   "UI_Settings_PathsHeader": "路径（重启后生效）",
   "UI_Path_Log": "日志",

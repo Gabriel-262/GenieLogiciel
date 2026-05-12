@@ -57,7 +57,12 @@ public sealed class RemoteJobRepository : IJobRepository
         var payload = rsp.TryDecode<JobPayload>()
             ?? throw new InvalidOperationException("Réponse AddJob invalide.");
         var added = payload.Job.FromDto();
-        lock (_lock) _cache.Add(Clone(added));
+        // L'event evt.jobs.changed peut déjà avoir rafraîchi le cache (course
+        // entre la réponse et le broadcast serveur) : on évite le doublon.
+        lock (_lock)
+        {
+            if (!_cache.Any(j => j.Id == added.Id)) _cache.Add(Clone(added));
+        }
         return added;
     }
 

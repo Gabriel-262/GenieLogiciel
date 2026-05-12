@@ -71,7 +71,7 @@ public partial class JobListViewModel : ObservableObject
     [RelayCommand]
     public async Task DeleteJobAsync(int id)
     {
-        if (await _repo.DeleteJobAsync(id).ConfigureAwait(false)) Refresh();
+        if (await _repo.DeleteJobAsync(id)) Refresh();
     }
 
     [RelayCommand]
