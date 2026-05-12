@@ -10,7 +10,12 @@
   "StatePath": null,
   "ConfigPath": null,
   "LangPath": null,
-  "EncryptedExtensions": [".txt", ".docx", ".pdf"],
+  "EncryptedExtensions": [
+    ".txt",
+    ".docx",
+    ".pdf"
+  ],
+  "PriorityExtensions": [],
   "CryptoMode": "Rapide",
   "CryptoKey": "CryptoSoft",
   "CryptoSoftPath": null,
