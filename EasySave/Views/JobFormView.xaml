@@ -45,13 +45,6 @@
             <ComboBoxItem Content="{DynamicResource UI_Form_Type_Differential}" Tag="{x:Static models:BackupType.Differential}"/>
         </ComboBox>
 
-        <TextBlock Grid.Row="5" Grid.ColumnSpan="3"
-                   Style="{StaticResource Muted}"
-                   Margin="0,8,0,0">
-            <Run Text="{DynamicResource UI_Form_Valid}"/>
-            <Run Text="{Binding CanSave, Mode=OneWay}"/>
-        </TextBlock>
-
         <StackPanel Grid.Row="7" Grid.ColumnSpan="3" Orientation="Horizontal"
                     HorizontalAlignment="Right" Margin="0,16,0,0">
             <Button Content="{DynamicResource UI_Btn_Cancel}" Click="Cancel_Click"/>

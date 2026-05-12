@@ -7,22 +7,27 @@ namespace EasySave.ViewModels;
 
 public partial class JobListViewModel : ObservableObject
 {
-    private readonly JobRepository _repo;
-    private readonly BackupEngine _engine;
+    private readonly IJobRepository _repo;
+    private readonly IBackupEngine _engine;
+    private readonly SettingsService _settings;
 
     [ObservableProperty] private ObservableCollection<JobItemViewModel> jobs = new();
 
-    public JobListViewModel(JobRepository repo, BackupEngine engine)
+    public JobListViewModel(IJobRepository repo, IBackupEngine engine, SettingsService settings)
     {
         _repo = repo;
         _engine = engine;
+        _settings = settings;
         Refresh();
     }
 
     public int Count => Jobs.Count;
     public bool IsEmpty => Jobs.Count == 0;
-    public bool IsFull => Jobs.Count >= AppConfig.MaxJobs;
+    public bool HasJobs => Jobs.Count > 0;
+    public int MaxJobs => _settings.MaxJobs;
+    public bool IsFull => Jobs.Count >= _settings.MaxJobs;
     public bool HasAnyChecked => Jobs.Any(j => j.IsSelected);
+    public int SelectedCount => Jobs.Count(j => j.IsSelected);
 
     public void Refresh()
     {
@@ -42,14 +47,19 @@ public partial class JobListViewModel : ObservableObject
         }
         OnPropertyChanged(nameof(Count));
         OnPropertyChanged(nameof(IsEmpty));
+        OnPropertyChanged(nameof(HasJobs));
         OnPropertyChanged(nameof(IsFull));
         OnPropertyChanged(nameof(HasAnyChecked));
+        OnPropertyChanged(nameof(SelectedCount));
     }
 
     private void OnJobItemPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(JobItemViewModel.IsSelected))
+        {
             OnPropertyChanged(nameof(HasAnyChecked));
+            OnPropertyChanged(nameof(SelectedCount));
+        }
     }
 
     public JobItemViewModel? FindById(int id) =>
@@ -59,9 +69,9 @@ public partial class JobListViewModel : ObservableObject
         index1Based >= 1 && index1Based <= Jobs.Count ? Jobs[index1Based - 1] : null;
 
     [RelayCommand]
-    public void DeleteJob(int id)
+    public async Task DeleteJobAsync(int id)
     {
-        if (_repo.DeleteJob(id)) Refresh();
+        if (await _repo.DeleteJobAsync(id).ConfigureAwait(false)) Refresh();
     }
 
     [RelayCommand]

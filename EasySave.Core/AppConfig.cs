@@ -1,17 +1,18 @@
 using EasyLog;
-using EasySave.Models;
 
 namespace EasySave;
 
+// Utilitaires purement statiques liés au système de fichiers et à l'env.
+// IMPORTANT : ne contient plus d'état mutable global (l'ancienne propriété
+// `Settings` a été supprimée). La source de vérité des paramètres applicatifs
+// est maintenant SettingsService, injecté là où c'est nécessaire.
 public static class AppConfig
 {
     public const string DefaultLanguage = "en";
-    private const int FallbackMaxJobs = 5;
+    internal const int FallbackMaxJobs = 5;
 
     private static Dictionary<string, string>? _cachedEnv;
     private static string? _cachedBaseDirectory;
-
-    public static AppSettings? Settings { get; set; }
 
     public static string BaseDirectory
     {
@@ -36,31 +37,25 @@ public static class AppConfig
         }
     }
 
-    public static int MaxJobs
+    // Résolution d'un répertoire applicatif. Priorité :
+    //   1. Chemin fourni par l'utilisateur (depuis les settings, si non vide)
+    //   2. Variable d'env (envKey)
+    //   3. Sous-dossier par défaut de BaseDirectory
+    internal static string ResolveDirectory(string? settingsPath, string envKey, string defaultSubfolder)
     {
-        get
-        {
-            if (Settings?.MaxJobs is int v && v > 0) return v;
-            return int.TryParse(Env("MAX_JOBS"), out int e) && e > 0 ? e : FallbackMaxJobs;
-        }
+        string? raw = !string.IsNullOrWhiteSpace(settingsPath) ? settingsPath : Env(envKey);
+        if (string.IsNullOrWhiteSpace(raw))
+            return Path.Combine(BaseDirectory, defaultSubfolder);
+        return Path.IsPathRooted(raw) ? raw : Path.Combine(BaseDirectory, raw);
     }
 
-    public static LogFormat LogFormat =>
-        LoggerFactory.Parse(Settings?.LogFormat ?? Env("LOG_FORMAT"));
+    internal static LogFormat ResolveLogFormat(string? settingsValue)
+        => LoggerFactory.Parse(settingsValue ?? Env("LOG_FORMAT"));
 
-    public static string LogDirectory    => ResolveDirectory(Settings?.LogPath    ?? Env("LOG_PATH"),    "Logs");
-    public static string StateDirectory  => ResolveDirectory(Settings?.StatePath  ?? Env("STATE_PATH"),  "State");
-    public static string ConfigDirectory => ResolveDirectory(Settings?.ConfigPath ?? Env("CONFIG_PATH"), "Config");
-    public static string LangDirectory   => ResolveDirectory(Settings?.LangPath   ?? Env("LANG_PATH"),   "Lang");
-
-    private static string ResolveDirectory(string? raw, string defaultSubfolder)
+    internal static int ResolveMaxJobs(int? settingsValue)
     {
-        string path = string.IsNullOrWhiteSpace(raw)
-            ? Path.Combine(BaseDirectory, defaultSubfolder)
-            : (Path.IsPathRooted(raw)
-                ? raw
-                : Path.Combine(BaseDirectory, raw));
-        return path;
+        if (settingsValue is int v && v > 0) return v;
+        return int.TryParse(Env("MAX_JOBS"), out int e) && e > 0 ? e : FallbackMaxJobs;
     }
 
     private static string? Env(string key)

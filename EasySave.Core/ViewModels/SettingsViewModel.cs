@@ -23,9 +23,13 @@ public partial class SettingsViewModel : ObservableObject
         langPath = settings.Current.LangPath ?? string.Empty;
         cryptoMode = string.IsNullOrEmpty(settings.Current.CryptoMode) ? "Rapide" : settings.Current.CryptoMode;
         maxJobs = settings.Current.MaxJobs?.ToString() ?? string.Empty;
+        maxParallelJobs = settings.Current.MaxParallelJobs.ToString();
+        maxParallelFilesPerJob = settings.Current.MaxParallelFilesPerJob.ToString();
+        largeFileThresholdKb = settings.Current.LargeFileThresholdKb.ToString();
         businessSoftwareCheckMode = string.IsNullOrEmpty(settings.Current.BusinessSoftwareCheckMode)
             ? "StartOnly" : settings.Current.BusinessSoftwareCheckMode;
         EncryptedExtensions = new ObservableCollection<string>(settings.Current.EncryptedExtensions);
+        PriorityExtensions = new ObservableCollection<string>(settings.Current.PriorityExtensions);
     }
 
     [ObservableProperty]
@@ -41,19 +45,52 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private string langPath;
     [ObservableProperty] private string cryptoMode;
     [ObservableProperty] private string maxJobs;
+    [ObservableProperty] private string maxParallelJobs;
+    [ObservableProperty] private string maxParallelFilesPerJob;
+    [ObservableProperty] private string largeFileThresholdKb;
     [ObservableProperty] private string businessSoftwareCheckMode;
 
     public ObservableCollection<string> EncryptedExtensions { get; }
+    public ObservableCollection<string> PriorityExtensions { get; }
 
     public string LanguageDisplayName => LanguageLabel(Language);
+
+    // Setting-driven persistence (used by ComboBox bindings).
+    // Source generator only invokes these once the field-backed setter runs,
+    // so constructor-time field assignments do not trigger them.
+    partial void OnLanguageChanged(string value)
+    {
+        if (!IsSupportedLanguage(value)) return;
+        _settings.Current.Language = value;
+        _settings.Save();
+        Translator.SetLanguage(value);
+    }
+
+    partial void OnLogFormatChanged(string value)
+    {
+        if (value != "json" && value != "xml") return;
+        _settings.Current.LogFormat = value;
+        _settings.Save();
+    }
+
+    partial void OnBusinessSoftwareCheckModeChanged(string value)
+    {
+        if (value != "StartOnly" && value != "Continuous") return;
+        _settings.Current.BusinessSoftwareCheckMode = value;
+        _settings.Save();
+    }
+
+    partial void OnCryptoModeChanged(string value)
+    {
+        if (value != "Rapide" && value != "Standard" && value != "Premium") return;
+        _settings.Current.CryptoMode = value;
+        _settings.Save();
+    }
 
     [RelayCommand(CanExecute = nameof(CanChangeLanguage))]
     private void ChangeLanguage(string code)
     {
         Language = code;
-        _settings.Current.Language = code;
-        _settings.Save();
-        Translator.SetLanguage(code);
     }
 
     private bool CanChangeLanguage(string? code) => IsSupportedLanguage(code);
@@ -75,7 +112,6 @@ public partial class SettingsViewModel : ObservableObject
         LogFormat = LogFormat == "xml" ? "json" : "xml";
         _settings.Current.LogFormat = LogFormat;
         _settings.Save();
-        AppConfig.Settings = _settings.Current;
     }
 
     [RelayCommand]
@@ -84,17 +120,16 @@ public partial class SettingsViewModel : ObservableObject
         BusinessSoftwareName = name?.Trim() ?? string.Empty;
         _settings.Current.BusinessSoftwareName = BusinessSoftwareName;
         _settings.Save();
-        AppConfig.Settings = _settings.Current;
     }
 
     [RelayCommand]
-    private void ChangeLogPath(string path)    { LogPath = path;    _settings.Current.LogPath = Nullable(path);    _settings.Save(); AppConfig.Settings = _settings.Current; }
+    private void ChangeLogPath(string path)    { LogPath = path;    _settings.Current.LogPath = Nullable(path);    _settings.Save(); }
     [RelayCommand]
-    private void ChangeStatePath(string path)  { StatePath = path;  _settings.Current.StatePath = Nullable(path);  _settings.Save(); AppConfig.Settings = _settings.Current; }
+    private void ChangeStatePath(string path)  { StatePath = path;  _settings.Current.StatePath = Nullable(path);  _settings.Save(); }
     [RelayCommand]
-    private void ChangeConfigPath(string path) { ConfigPath = path; _settings.Current.ConfigPath = Nullable(path); _settings.Save(); AppConfig.Settings = _settings.Current; }
+    private void ChangeConfigPath(string path) { ConfigPath = path; _settings.Current.ConfigPath = Nullable(path); _settings.Save(); }
     [RelayCommand]
-    private void ChangeLangPath(string path)   { LangPath = path;   _settings.Current.LangPath = Nullable(path);   _settings.Save(); AppConfig.Settings = _settings.Current; }
+    private void ChangeLangPath(string path)   { LangPath = path;   _settings.Current.LangPath = Nullable(path);   _settings.Save(); }
 
     [RelayCommand]
     private void ChangeMaxJobs(string value)
@@ -114,7 +149,39 @@ public partial class SettingsViewModel : ObservableObject
             return;
         }
         _settings.Save();
-        AppConfig.Settings = _settings.Current;
+    }
+
+    [RelayCommand]
+    private void ChangeMaxParallelJobs(string value)
+    {
+        if (int.TryParse(value?.Trim(), out int n) && n >= 1)
+        {
+            MaxParallelJobs = n.ToString();
+            _settings.Current.MaxParallelJobs = n;
+            _settings.Save();
+        }
+    }
+
+    [RelayCommand]
+    private void ChangeMaxParallelFilesPerJob(string value)
+    {
+        if (int.TryParse(value?.Trim(), out int n) && n >= 1)
+        {
+            MaxParallelFilesPerJob = n.ToString();
+            _settings.Current.MaxParallelFilesPerJob = n;
+            _settings.Save();
+        }
+    }
+
+    [RelayCommand]
+    private void ChangeLargeFileThresholdKb(string value)
+    {
+        if (int.TryParse(value?.Trim(), out int n) && n >= 0)
+        {
+            LargeFileThresholdKb = n.ToString();
+            _settings.Current.LargeFileThresholdKb = n;
+            _settings.Save();
+        }
     }
 
     [RelayCommand]
@@ -124,7 +191,6 @@ public partial class SettingsViewModel : ObservableObject
             StringComparison.OrdinalIgnoreCase) ? "Continuous" : "StartOnly";
         _settings.Current.BusinessSoftwareCheckMode = BusinessSoftwareCheckMode;
         _settings.Save();
-        AppConfig.Settings = _settings.Current;
     }
 
     [RelayCommand]
@@ -167,6 +233,31 @@ public partial class SettingsViewModel : ObservableObject
         _settings.Save();
     }
 
+    [RelayCommand(CanExecute = nameof(CanAddExtension))]
+    private void AddPriorityExtension(string extension)
+    {
+        string normalized = NormalizeExtension(extension);
+        if (string.IsNullOrEmpty(normalized)) return;
+        if (PriorityExtensions.Any(e => string.Equals(e, normalized, StringComparison.OrdinalIgnoreCase))) return;
+
+        PriorityExtensions.Add(normalized);
+        _settings.Current.PriorityExtensions = PriorityExtensions.ToList();
+        _settings.Save();
+    }
+
+    [RelayCommand]
+    private void RemovePriorityExtension(string extension)
+    {
+        string normalized = NormalizeExtension(extension);
+        var match = PriorityExtensions.FirstOrDefault(e =>
+            string.Equals(e, normalized, StringComparison.OrdinalIgnoreCase));
+        if (match is null) return;
+
+        PriorityExtensions.Remove(match);
+        _settings.Current.PriorityExtensions = PriorityExtensions.ToList();
+        _settings.Save();
+    }
+
     private static string NormalizeExtension(string ext)
     {
         if (string.IsNullOrWhiteSpace(ext)) return string.Empty;
@@ -181,7 +272,7 @@ public partial class SettingsViewModel : ObservableObject
         input.Trim().Equals(BackKey, StringComparison.OrdinalIgnoreCase);
 
     public static bool IsSupportedLanguage(string? code) =>
-        code is "en" or "fr" or "zh" or "he" or "ht";
+        code is "en" or "fr" or "zh" or "he" or "ht" or "ch";
 
     public static string LanguageLabel(string code) => code switch
     {
@@ -190,6 +281,7 @@ public partial class SettingsViewModel : ObservableObject
         "zh" => "中文",
         "he" => "עברית",
         "ht" => "Kreyòl",
+        "ch" => "Ch'ti",
         _    => code
     };
 }

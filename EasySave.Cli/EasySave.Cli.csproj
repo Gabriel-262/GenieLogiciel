@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\EasySave.Core\EasySave.Core.csproj" />
+    <ProjectReference Include="..\EasySave.Client\EasySave.Client.csproj" />
   </ItemGroup>
 
 </Project>

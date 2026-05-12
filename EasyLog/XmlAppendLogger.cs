@@ -40,6 +40,10 @@ public class XmlAppendLogger : ILogger
             writer.WriteElementString("FileSizeBytes", entry.FileSizeBytes.ToString(CultureInfo.InvariantCulture));
             writer.WriteElementString("TransferTimeMs", entry.TransferTimeMs.ToString(CultureInfo.InvariantCulture));
             writer.WriteElementString("CryptoTimeMs", entry.CryptoTimeMs.ToString(CultureInfo.InvariantCulture));
+            writer.WriteElementString("ThreadId", entry.ThreadId.ToString(CultureInfo.InvariantCulture));
+            writer.WriteElementString("MaxDegreeOfParallelism", entry.MaxDegreeOfParallelism.ToString(CultureInfo.InvariantCulture));
+            writer.WriteElementString("ThreadsUsed", entry.ThreadsUsed.ToString(CultureInfo.InvariantCulture));
+            writer.WriteElementString("ChunkCount", entry.ChunkCount.ToString(CultureInfo.InvariantCulture));
             writer.WriteEndElement();
         }
 

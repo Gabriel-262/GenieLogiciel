@@ -1,3 +1,4 @@
+using System.Collections.Specialized;
 using CommunityToolkit.Mvvm.ComponentModel;
 using EasySave.Services;
 
@@ -11,6 +12,7 @@ public partial class MainViewModel : ObservableObject
     public JobFormViewModel JobForm { get; }
     public SettingsViewModel Settings { get; }
     public JobExecutionViewModel Execution { get; }
+    public LogsViewModel Logs { get; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsAnyJobRunning))]
@@ -24,19 +26,26 @@ public partial class MainViewModel : ObservableObject
     public bool IsExecutionBadgeVisible => UnseenExecutionCount > 0;
 
     public MainViewModel(
-        JobRepository repo,
-        BackupEngine engine,
-        SettingsService settings)
+        IJobRepository repo,
+        IBackupEngine engine,
+        SettingsService settings,
+        PathService paths)
     {
         _ui = SynchronizationContext.Current;
 
-        JobList = new JobListViewModel(repo, engine);
+        JobList = new JobListViewModel(repo, engine, settings);
         JobForm = new JobFormViewModel(repo);
         Settings = new SettingsViewModel(settings);
         Execution = new JobExecutionViewModel(engine);
+        Logs = new LogsViewModel(paths);
 
         engine.JobStarted += OnJobStarted;
         engine.JobCompleted += OnJobCompleted;
+
+        // Bind each JobItem to its live progress, so per-job cards show
+        // a progress bar + pause/resume/stop without a separate tab.
+        Execution.Jobs.CollectionChanged += OnExecutionJobsChanged;
+        JobList.Jobs.CollectionChanged += (_, __) => SyncProgressToList();
     }
 
     public void MarkExecutionViewed()
@@ -44,13 +53,45 @@ public partial class MainViewModel : ObservableObject
         UnseenExecutionCount = 0;
     }
 
-    private void OnJobStarted(object? sender, string jobName) => RunOnUi(() =>
+    private void OnExecutionJobsChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.NewItems is not null)
+            foreach (JobProgressItemViewModel p in e.NewItems)
+                AttachProgress(p);
+
+        if (e.OldItems is not null)
+            foreach (JobProgressItemViewModel p in e.OldItems)
+                DetachProgress(p);
+    }
+
+    private void AttachProgress(JobProgressItemViewModel p)
+    {
+        var item = JobList.FindById(p.JobId);
+        if (item is not null) item.Progress = p;
+    }
+
+    private void DetachProgress(JobProgressItemViewModel p)
+    {
+        var item = JobList.FindById(p.JobId);
+        if (item is not null && ReferenceEquals(item.Progress, p))
+            item.Progress = null;
+    }
+
+    private void SyncProgressToList()
+    {
+        // Called after JobList.Refresh: re-attach progress objects to newly
+        // recreated JobItemViewModels.
+        foreach (var item in JobList.Jobs)
+            item.Progress = Execution.Jobs.FirstOrDefault(p => p.JobId == item.Id);
+    }
+
+    private void OnJobStarted(object? sender, JobLifecycleEventArgs e) => RunOnUi(() =>
     {
         RunningCount++;
         UnseenExecutionCount++;
     });
 
-    private void OnJobCompleted(object? sender, string jobName) => RunOnUi(() =>
+    private void OnJobCompleted(object? sender, JobLifecycleEventArgs e) => RunOnUi(() =>
     {
         if (RunningCount > 0) RunningCount--;
     });

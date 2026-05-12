@@ -5,11 +5,20 @@ namespace EasySave.Services;
 /// <summary>
 /// Mode "Rapide" — délègue le chiffrement XOR à l'exe externe CryptoSoft (VRE).
 /// CLI: CryptoSoft.exe &lt;file&gt; &lt;key&gt;.
-/// Convention de retour VRE: ExitCode = durée en ms (>=0), -1 fichier introuvable, -99 exception.
-/// On propage ces codes tels quels dans CryptoTimeMs (avec -2 ajouté pour "exe introuvable").
+/// Codes de retour CryptoSoft :
+///     >=0  durée en ms
+///     -1   fichier introuvable
+///     -99  exception interne
+///     -100 une autre instance tourne déjà (mono-instance)
 /// </summary>
 public class XorCryptoService : ICryptoSoft
 {
+    // File d'attente IN-PROCESS : sérialise les appels CryptoSoft émis par
+    // EasySave depuis ses threads de sauvegarde parallèles. Combiné avec le
+    // Mutex côté CryptoSoft.exe, ça garantit qu'on ne se prend jamais
+    // d'exit -100 ("already running") en interne.
+    private static readonly SemaphoreSlim _queue = new(1, 1);
+
     private readonly SettingsService _settings;
 
     public XorCryptoService(SettingsService settings)
@@ -39,6 +48,7 @@ public class XorCryptoService : ICryptoSoft
         psi.ArgumentList.Add(filePath);
         psi.ArgumentList.Add(key);
 
+        _queue.Wait();
         try
         {
             using var process = Process.Start(psi);
@@ -54,6 +64,10 @@ public class XorCryptoService : ICryptoSoft
         catch
         {
             return -2;
+        }
+        finally
+        {
+            _queue.Release();
         }
     }
 

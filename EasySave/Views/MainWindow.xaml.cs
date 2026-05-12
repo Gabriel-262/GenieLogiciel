@@ -12,7 +12,7 @@ public partial class MainWindow : Window
     }
 
     private void NavJobs_Click(object sender, RoutedEventArgs e) => ShowJobs();
-    private void NavExecution_Click(object sender, RoutedEventArgs e) => ShowExecution();
+    private void NavLogs_Click(object sender, RoutedEventArgs e) => ShowLogs();
     private void NavSettings_Click(object sender, RoutedEventArgs e) => ShowSettings();
 
     private void ShowJobs()
@@ -20,10 +20,10 @@ public partial class MainWindow : Window
         ContentHost.Content = new JobListView { DataContext = App.MainViewModel };
     }
 
-    private void ShowExecution()
+    private void ShowLogs()
     {
-        App.MainViewModel.MarkExecutionViewed();
-        ContentHost.Content = new JobExecutionView { DataContext = App.MainViewModel.Execution };
+        App.MainViewModel.Logs.Refresh();
+        ContentHost.Content = new LogsView { DataContext = App.MainViewModel.Logs };
     }
 
     private void ShowSettings()

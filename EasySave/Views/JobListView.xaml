@@ -3,21 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
-        <Style x:Key="RequiresSelection" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding ElementName=Grid, Path=SelectedItem}" Value="{x:Null}">
-                    <Setter Property="IsEnabled" Value="False"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-        <Style x:Key="RequiresSelectionDanger" TargetType="Button" BasedOn="{StaticResource DangerButton}">
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding ElementName=Grid, Path=SelectedItem}" Value="{x:Null}">
-                    <Setter Property="IsEnabled" Value="False"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
     </UserControl.Resources>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -26,45 +13,286 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="{DynamicResource UI_JobList_Title}" Style="{StaticResource H1}"/>
-
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,4">
-            <Button Content="{DynamicResource UI_Btn_Add}"         Style="{StaticResource PrimaryButton}"        Click="Add_Click"/>
-            <Button Content="{DynamicResource UI_Btn_Edit}"        Style="{StaticResource RequiresSelection}"    Click="Edit_Click"/>
-            <Button Content="{DynamicResource UI_Btn_Delete}"      Style="{StaticResource RequiresSelectionDanger}" Click="Delete_Click"/>
-            <Button Content="{DynamicResource UI_Btn_Execute}"     Click="Execute_Click"
-                    IsEnabled="{Binding JobList.HasAnyChecked}"/>
-            <Button Content="{DynamicResource UI_Btn_ExecuteAll}"  Click="ExecuteAll_Click"/>
-            <Button Content="{DynamicResource UI_Btn_SelectAll}"   Click="SelectAll_Click"/>
-            <Button Content="{DynamicResource UI_Btn_DeselectAll}" Click="DeselectAll_Click"/>
-            <Button Content="{DynamicResource UI_Btn_Refresh}"     Click="Refresh_Click"/>
+        <!-- Title -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,4">
+            <TextBlock Text="{DynamicResource UI_JobList_Title}" Style="{StaticResource H1}"/>
+            <TextBlock Text="Gérez et lancez vos travaux de sauvegarde." Style="{StaticResource Subtitle}"/>
         </StackPanel>
 
-        <TextBlock Grid.Row="2"
-                   Text="{DynamicResource UI_Exec_InProgress}"
-                   Style="{StaticResource Muted}"
-                   Margin="0,0,0,12"
-                   Visibility="{Binding IsExecutionBadgeVisible, Converter={StaticResource BoolToVis}}"/>
+        <!-- Top action bar -->
+        <Grid Grid.Row="1" Margin="0,16,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
 
-        <Border Grid.Row="3" Style="{StaticResource Card}" Padding="0">
-            <DataGrid x:Name="Grid" ItemsSource="{Binding JobList.Jobs}">
-                <DataGrid.Columns>
-                    <DataGridTemplateColumn Header="" Width="40" CanUserSort="False">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-                                          HorizontalAlignment="Center"
-                                          VerticalAlignment="Center"/>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTextColumn Header="{DynamicResource UI_Col_Id}"     Binding="{Binding Id}"         Width="60"/>
-                    <DataGridTextColumn Header="{DynamicResource UI_Col_Name}"   Binding="{Binding Name}"       Width="*"/>
-                    <DataGridTextColumn Header="{DynamicResource UI_Col_Type}"   Binding="{Binding Type}"       Width="120"/>
-                    <DataGridTextColumn Header="{DynamicResource UI_Col_Source}" Binding="{Binding SourcePath}" Width="2*"/>
-                    <DataGridTextColumn Header="{DynamicResource UI_Col_Target}" Binding="{Binding TargetPath}" Width="2*"/>
-                </DataGrid.Columns>
-            </DataGrid>
+            <StackPanel Grid.Column="0" Orientation="Horizontal">
+                <Button Content="+ Nouveau travail"
+                        Style="{StaticResource PrimaryButton}"
+                        Click="Add_Click"/>
+                <Button Content="Tout exécuter"
+                        Click="ExecuteAll_Click"
+                        IsEnabled="{Binding JobList.HasJobs}"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="2" Orientation="Horizontal">
+                <Border Style="{StaticResource Pill}"
+                        VerticalAlignment="Center"
+                        Margin="0,0,8,0"
+                        Visibility="{Binding JobList.HasAnyChecked, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold">
+                        <Run Text="{Binding JobList.SelectedCount, Mode=OneWay}"/>
+                        <Run Text=" sélectionnés"/>
+                    </TextBlock>
+                </Border>
+                <Button Content="Lancer la sélection"
+                        Style="{StaticResource PrimaryButton}"
+                        Click="ExecuteSelection_Click"
+                        IsEnabled="{Binding JobList.HasAnyChecked}"/>
+                <Button Content="Tout cocher" Click="SelectAll_Click"
+                        IsEnabled="{Binding JobList.HasJobs}"/>
+                <Button Content="Aucun" Click="DeselectAll_Click"
+                        IsEnabled="{Binding JobList.HasAnyChecked}"/>
+                <Button Style="{StaticResource IconButton}"
+                        Content="↻" ToolTip="Rafraîchir" Click="Refresh_Click"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Business software banner -->
+        <Border Grid.Row="2"
+                Background="{DynamicResource WarningBrush}"
+                CornerRadius="6"
+                Padding="14,10"
+                Margin="0,12,0,0"
+                Visibility="{Binding Execution.HasBusinessSoftwareAlert, Converter={StaticResource BoolToVis}}">
+            <TextBlock Text="{Binding Execution.BusinessSoftwareAlert}"
+                       Foreground="#FF1F2937"
+                       FontWeight="SemiBold"
+                       TextWrapping="Wrap"/>
         </Border>
+
+        <!-- Empty state -->
+        <Border Grid.Row="3"
+                Style="{StaticResource Card}"
+                Margin="0,16,0,0"
+                Visibility="{Binding JobList.IsEmpty, Converter={StaticResource BoolToVis}}">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,40">
+                <TextBlock Text="Aucun travail configuré"
+                           Style="{StaticResource H2}"
+                           HorizontalAlignment="Center"/>
+                <TextBlock Text="Cliquez sur « + Nouveau travail » pour en créer un."
+                           Style="{StaticResource Muted}"
+                           HorizontalAlignment="Center"
+                           Margin="0,6,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Job cards -->
+        <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto"
+                      Margin="0,16,0,0"
+                      Padding="0,0,4,0"
+                      Visibility="{Binding JobList.HasJobs, Converter={StaticResource BoolToVis}}">
+            <ItemsControl ItemsSource="{Binding JobList.Jobs}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border>
+                            <Border.Style>
+                                <Style TargetType="Border" BasedOn="{StaticResource JobCard}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+
+                            <StackPanel>
+                                <!-- Header row -->
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Selection checkbox -->
+                                    <CheckBox Grid.Column="0"
+                                              IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                              VerticalAlignment="Center"
+                                              Margin="0,0,14,0"/>
+
+                                    <!-- Identity + paths -->
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding Name}"
+                                                       FontSize="16"
+                                                       FontWeight="SemiBold"
+                                                       VerticalAlignment="Center"/>
+                                            <Border Style="{StaticResource Pill}"
+                                                    Margin="10,0,0,0"
+                                                    VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Type}"
+                                                           FontSize="10"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource MutedForegroundBrush}"/>
+                                            </Border>
+                                            <TextBlock Text="{Binding Id, StringFormat=#{0}}"
+                                                       FontSize="11"
+                                                       Foreground="{DynamicResource MutedForegroundBrush}"
+                                                       VerticalAlignment="Center"
+                                                       Margin="10,0,0,0"/>
+                                        </StackPanel>
+
+                                        <Grid Margin="0,8,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="60"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="Source"
+                                                       Style="{StaticResource Label}"
+                                                       VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding SourcePath}"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       VerticalAlignment="Center"/>
+                                        </Grid>
+                                        <Grid Margin="0,4,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="60"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="Cible"
+                                                       Style="{StaticResource Label}"
+                                                       VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding TargetPath}"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </StackPanel>
+
+                                    <!-- Idle actions (hidden while running) -->
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <StackPanel.Style>
+                                            <Style TargetType="StackPanel">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </StackPanel.Style>
+                                        <Button Style="{StaticResource PrimaryButton}"
+                                                Content="▶ Exécuter"
+                                                Tag="{Binding Id}"
+                                                Click="ExecuteOne_Click"/>
+                                        <Button Style="{StaticResource IconButton}"
+                                                Content="✎"
+                                                ToolTip="Modifier"
+                                                Tag="{Binding Id}"
+                                                Click="EditOne_Click"/>
+                                        <Button Style="{StaticResource DangerButton}"
+                                                ToolTip="Supprimer"
+                                                MinWidth="38"
+                                                Tag="{Binding Id}"
+                                                Click="DeleteOne_Click">
+                                            <TextBlock Text="&#xE74D;"
+                                                       FontFamily="Segoe MDL2 Assets"
+                                                       FontSize="14"
+                                                       Foreground="{DynamicResource DangerForegroundBrush}"/>
+                                        </Button>
+                                    </StackPanel>
+
+                                    <!-- Running controls -->
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <StackPanel.Style>
+                                            <Style TargetType="StackPanel">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </StackPanel.Style>
+
+                                        <!-- Pause when running, Resume when paused (single toggle) -->
+                                        <Button FontFamily="Segoe MDL2 Assets" FontSize="13">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource IconButton}">
+                                                    <Setter Property="ToolTip" Value="Pause"/>
+                                                    <Setter Property="Command" Value="{Binding Progress.PauseCommand}"/>
+                                                    <Setter Property="Content" Value="&#xE769;"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Progress.IsPaused}" Value="True">
+                                                            <Setter Property="ToolTip" Value="Reprendre"/>
+                                                            <Setter Property="Command" Value="{Binding Progress.ResumeCommand}"/>
+                                                            <Setter Property="Content" Value="&#xE768;"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
+
+                                        <Button Style="{StaticResource DangerButton}"
+                                                ToolTip="Arrêter"
+                                                FontFamily="Segoe MDL2 Assets"
+                                                FontSize="13"
+                                                Content="&#xE71A;"
+                                                MinWidth="38"
+                                                Command="{Binding Progress.StopCommand}"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- Progress section (only when running) -->
+                                <Border Margin="0,14,0,0"
+                                        Visibility="{Binding IsRunning, Converter={StaticResource BoolToVis}}">
+                                    <StackPanel>
+                                        <!-- Paused-for-error banner -->
+                                        <Border Background="{DynamicResource WarningBrush}"
+                                                CornerRadius="6"
+                                                Padding="12,8"
+                                                Margin="0,0,0,10"
+                                                Visibility="{Binding Progress.IsPausedForError, Converter={StaticResource BoolToVis}}">
+                                            <StackPanel>
+                                                <TextBlock Text="En pause"
+                                                           Foreground="#FF1F2937"
+                                                           FontWeight="Bold"/>
+                                                <TextBlock Text="{Binding Progress.ErrorMessage}"
+                                                           Foreground="#FF1F2937"
+                                                           TextWrapping="Wrap"
+                                                           Margin="0,2,0,0"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <Grid Margin="0,0,0,4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Style="{StaticResource Muted}">
+                                                <Run Text="{Binding Progress.ProcessedFiles}"/>
+                                                <Run Text=" / "/>
+                                                <Run Text="{Binding Progress.TotalFiles}"/>
+                                                <Run Text=" fichiers"/>
+                                            </TextBlock>
+                                            <TextBlock Grid.Column="1"
+                                                       Foreground="{DynamicResource AccentBrush}"
+                                                       FontWeight="SemiBold"
+                                                       Text="{Binding Progress.ProgressPercent, StringFormat={}{0:0.0}%}"/>
+                                        </Grid>
+                                        <ProgressBar Value="{Binding Progress.ProgressPercent}" Maximum="100"/>
+                                        <TextBlock Style="{StaticResource Muted}"
+                                                   Margin="0,8,0,0"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Text="{Binding Progress.CurrentSourceFile}"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
     </Grid>
 </UserControl>

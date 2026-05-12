@@ -1,24 +1,25 @@
 {
   "AutoAssignJobId": false,
-  "Language": "fr",
+  "Language": "en",
   "BackKey": "r",
   "LogFormat": "xml",
-  "MaxJobs": 1,
+  "MaxJobs": 10,
   "BusinessSoftwareName": "",
   "BusinessSoftwareCheckMode": "Continuous",
   "LogPath": null,
   "StatePath": null,
   "ConfigPath": null,
   "LangPath": null,
-  "EncryptedExtensions": [
-    ".txt",
-    ".docx",
-    ".pdf"
-  ],
-  "CryptoMode": "Standard",
+  "EncryptedExtensions": [".txt", ".docx", ".pdf"],
+  "CryptoMode": "Rapide",
   "CryptoKey": "CryptoSoft",
   "CryptoSoftPath": null,
   "CryptoPublicKey": null,
   "CryptoPrivateKey": null,
-  "Theme": "dark"
+  "Theme": "dark",
+  "MaxParallelJobs": 4,
+  "MaxParallelFilesPerJob": 4,
+  "LargeFileThresholdKb": 1024,
+  "RemoteServerHost": null,
+  "RemoteServerPort": null
 }

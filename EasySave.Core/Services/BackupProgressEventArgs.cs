@@ -2,6 +2,7 @@ namespace EasySave.Services;
 
 public class BackupProgressEventArgs : EventArgs
 {
+    public int JobId { get; init; }
     public string JobName { get; init; } = string.Empty;
     public string CurrentSourceFile { get; init; } = string.Empty;
     public string CurrentDestinationFile { get; init; } = string.Empty;

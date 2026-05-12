@@ -14,69 +14,105 @@
 
         <TextBlock Grid.Row="0" Text="{DynamicResource UI_Exec_Title}" Style="{StaticResource H1}"/>
 
-        <!-- Bandeau d'alerte affiché seulement quand le job est en pause -->
+        <!-- Bandeau global d'alerte logiciel métier (visible uniquement si détecté) -->
         <Border Grid.Row="1"
-                Background="#E67E22"
+                Background="#C0392B"
                 CornerRadius="6"
                 Padding="14,10"
-                Margin="0,0,0,12"
-                Visibility="{Binding IsPaused, Converter={StaticResource BoolToVis}}">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0">
-                    <TextBlock Text="⏸  Sauvegarde en pause"
-                               Foreground="White" FontWeight="Bold" FontSize="14"/>
-                    <TextBlock Text="Le logiciel métier surveillé est en cours d'exécution. Fermez-le, puis cliquez sur Reprendre."
-                               Foreground="White" Margin="0,4,0,0" TextWrapping="Wrap"/>
-                </StackPanel>
-                <Button Grid.Column="1"
-                        Content="▶ Reprendre"
-                        Command="{Binding ResumeCommand}"
-                        Padding="14,6"
-                        Margin="12,0,0,0"
-                        FontWeight="Bold"
-                        VerticalAlignment="Center"/>
-            </Grid>
+                Margin="0,8,0,8"
+                Visibility="{Binding HasBusinessSoftwareAlert, Converter={StaticResource BoolToVis}}">
+            <TextBlock Text="{Binding BusinessSoftwareAlert}"
+                       Foreground="White" FontWeight="Bold" FontSize="14"
+                       TextWrapping="Wrap"/>
         </Border>
 
-        <Border Grid.Row="2" Style="{StaticResource Card}" Margin="0,0,0,16">
+        <!-- Barre de contrôle globale : Tout pause / Tout play / Tout stop -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,4,0,12">
+            <Button Content="⏸ Tout mettre en pause"
+                    Command="{Binding PauseAllCommand}"
+                    Padding="14,6" Margin="0,0,8,0"/>
+            <Button Content="▶ Tout reprendre"
+                    Command="{Binding ResumeAllCommand}"
+                    Padding="14,6" Margin="0,0,8,0"/>
+            <Button Content="⏹ Tout arrêter"
+                    Command="{Binding StopAllCommand}"
+                    Padding="14,6"/>
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto">
             <StackPanel>
-                <TextBlock Text="{DynamicResource UI_Exec_CurrentJob}" Style="{StaticResource Muted}"/>
-                <TextBlock Text="{Binding CurrentJobName, FallbackValue='—'}" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,12"/>
+                <!-- Une carte par job en cours d'exécution -->
+                <ItemsControl ItemsSource="{Binding Jobs}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource Card}" Margin="0,0,0,12">
+                                <StackPanel>
+                                    <!-- Bandeau d'erreur : visible UNIQUEMENT pour les pauses
+                                         "subies" (logiciel métier ou fichier verrouillé).
+                                         Pas de bandeau pour une pause manuelle utilisateur. -->
+                                    <Border Background="#E67E22"
+                                            CornerRadius="6"
+                                            Padding="14,10"
+                                            Margin="0,0,0,12"
+                                            Visibility="{Binding IsPausedForError, Converter={StaticResource BoolToVis}}">
+                                        <StackPanel>
+                                            <TextBlock Text="⏸  Sauvegarde en pause"
+                                                       Foreground="White" FontWeight="Bold" FontSize="14"/>
+                                            <TextBlock Text="{Binding ErrorMessage}"
+                                                       Foreground="White" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </Border>
 
-                <ProgressBar Value="{Binding ProgressPercent}" Maximum="100" Margin="0,0,0,8"/>
-                <TextBlock Margin="0,0,0,12">
-                    <Run Text="{Binding ProcessedFiles}"/>
-                    <Run Text="/"/>
-                    <Run Text="{Binding TotalFiles}"/>
-                    <Run Text="{DynamicResource UI_Exec_Files}"/>
-                    <Run Text="{Binding ProgressPercent, StringFormat={}{0:0.0}%}"/>
-                </TextBlock>
+                                    <TextBlock Text="{DynamicResource UI_Exec_CurrentJob}" Style="{StaticResource Muted}"/>
+                                    <TextBlock Text="{Binding JobName, FallbackValue='—'}"
+                                               FontSize="16" FontWeight="SemiBold" Margin="0,4,0,12"/>
 
-                <TextBlock Text="{DynamicResource UI_Col_Source}"      Style="{StaticResource Muted}"/>
-                <TextBlock Text="{Binding CurrentSourceFile, FallbackValue=''}" TextTrimming="CharacterEllipsis" Margin="0,2,0,8"/>
+                                    <!-- Badge discret quand pause manuelle (pas un bandeau d'erreur) -->
+                                    <Border Background="#F39C12"
+                                            CornerRadius="4"
+                                            Padding="8,3"
+                                            HorizontalAlignment="Left"
+                                            Margin="0,0,0,8"
+                                            Visibility="{Binding IsPausedByUser, Converter={StaticResource BoolToVis}}">
+                                        <TextBlock Text="⏸ En pause"
+                                                   Foreground="White" FontWeight="SemiBold" FontSize="12"/>
+                                    </Border>
 
-                <TextBlock Text="{DynamicResource UI_Exec_Destination}" Style="{StaticResource Muted}"/>
-                <TextBlock Text="{Binding CurrentDestinationFile, FallbackValue=''}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+                                    <!-- Contrôles par job : Pause / Reprendre / Stop -->
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                        <Button Content="⏸ Pause"
+                                                Command="{Binding PauseCommand}"
+                                                Padding="12,4" Margin="0,0,8,0"/>
+                                        <Button Content="▶ Reprendre"
+                                                Command="{Binding ResumeCommand}"
+                                                Padding="12,4" Margin="0,0,8,0"/>
+                                        <Button Content="⏹ Stop"
+                                                Command="{Binding StopCommand}"
+                                                Padding="12,4"/>
+                                    </StackPanel>
+
+                                    <ProgressBar Value="{Binding ProgressPercent}" Maximum="100" Margin="0,0,0,8"/>
+                                    <TextBlock Margin="0,0,0,12">
+                                        <Run Text="{Binding ProcessedFiles}"/>
+                                        <Run Text="/"/>
+                                        <Run Text="{Binding TotalFiles}"/>
+                                        <Run Text="{DynamicResource UI_Exec_Files}"/>
+                                        <Run Text="{Binding ProgressPercent, StringFormat={}{0:0.0}%}"/>
+                                    </TextBlock>
+
+                                    <TextBlock Text="{DynamicResource UI_Col_Source}" Style="{StaticResource Muted}"/>
+                                    <TextBlock Text="{Binding CurrentSourceFile, FallbackValue=''}"
+                                               TextTrimming="CharacterEllipsis" Margin="0,2,0,8"/>
+
+                                    <TextBlock Text="{DynamicResource UI_Exec_Destination}" Style="{StaticResource Muted}"/>
+                                    <TextBlock Text="{Binding CurrentDestinationFile, FallbackValue=''}"
+                                               TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
             </StackPanel>
-        </Border>
-
-        <Border Grid.Row="3" Style="{StaticResource Card}">
-            <StackPanel>
-                <TextBlock Text="{DynamicResource UI_Exec_Status}" Style="{StaticResource Muted}"/>
-                <TextBlock FontSize="14" Margin="0,4,0,0">
-                    <Run Text="{DynamicResource UI_Exec_Running}"/>
-                    <Run Text="{Binding IsRunning, Mode=OneWay}"/>
-                </TextBlock>
-                <TextBlock FontSize="14" Margin="0,4,0,0"
-                           Foreground="#E67E22"
-                           Visibility="{Binding IsPaused, Converter={StaticResource BoolToVis}}">
-                    En pause — logiciel métier détecté
-                </TextBlock>
-            </StackPanel>
-        </Border>
+        </ScrollViewer>
     </Grid>
 </UserControl>
