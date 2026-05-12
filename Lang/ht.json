@@ -114,7 +114,7 @@
   "UI_Settings_Encryption": "Chifreman (CryptoSoft)",
   "UI_Settings_EncryptionDesc": "Ekstansyon fichye chifre apre kopi.",
   "UI_Settings_Mode": "Mòd",
-  "UI_Settings_ToggleCryptoMode": "Chanje (Rapide / Standard / Premium)",
+  "UI_Settings_ToggleCryptoMode": "Chanje (Rapide / Standard / Performant)",
   "UI_Settings_Extensions": "Ekstansyon",
   "UI_Settings_PathsHeader": "Chemen (aplike nan demaraj)",
   "UI_Path_Log": "Jounal",

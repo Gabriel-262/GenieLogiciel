@@ -96,7 +96,7 @@
             <ItemsControl ItemsSource="{Binding JobList.Jobs}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border>
+                        <Border MouseLeftButtonUp="JobCard_Click">
                             <Border.Style>
                                 <Style TargetType="Border" BasedOn="{StaticResource JobCard}">
                                     <Style.Triggers>

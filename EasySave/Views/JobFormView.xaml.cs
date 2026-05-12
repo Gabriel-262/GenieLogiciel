@@ -30,9 +30,13 @@ public partial class JobFormView : UserControl
         Window.GetWindow(this)?.Close();
     }
 
-    private void Save_Click(object sender, RoutedEventArgs e)
+    private async void Save_Click(object sender, RoutedEventArgs e)
     {
-        // SaveCommand has already run via Button.Command if CanSave is true.
-        if (Vm.CanSave) Window.GetWindow(this)?.Close();
+        if (!Vm.CanSave) return;
+        // Attendre que l'ajout/màj (potentiellement distant) soit réellement
+        // terminé avant de fermer la fenêtre, sinon le Refresh de la liste
+        // s'exécute avant que le job n'existe côté repository.
+        await Vm.SaveCommand.ExecuteAsync(null);
+        Window.GetWindow(this)?.Close();
     }
 }

@@ -76,7 +76,7 @@ public partial class JobFormViewModel : ObservableObject
             Type = Type
         };
 
-        if (Mode == JobFormMode.Create) await _repo.AddJobAsync(job).ConfigureAwait(false);
-        else await _repo.UpdateJobAsync(Id, job).ConfigureAwait(false);
+        if (Mode == JobFormMode.Create) await _repo.AddJobAsync(job);
+        else await _repo.UpdateJobAsync(Id, job);
     }
 }

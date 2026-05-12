@@ -120,7 +120,7 @@
   "UI_Settings_Encryption": "Encryption (CryptoSoft)",
   "UI_Settings_EncryptionDesc": "File extensions encrypted after copy.",
   "UI_Settings_Mode": "Mode",
-  "UI_Settings_ToggleCryptoMode": "Toggle (Rapide / Standard / Premium)",
+  "UI_Settings_ToggleCryptoMode": "Toggle (Rapide / Standard / Performant)",
   "UI_Settings_Extensions": "Extensions",
   "UI_Settings_Priority": "Priority files",
   "UI_Settings_PriorityDesc": "No non-priority file is copied while at least one priority file remains pending on any active job.",

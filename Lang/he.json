@@ -112,7 +112,7 @@
   "UI_Settings_Encryption": "הצפנה (CryptoSoft)",
   "UI_Settings_EncryptionDesc": "סיומות קבצים שמוצפנות לאחר העתקה.",
   "UI_Settings_Mode": "מצב",
-  "UI_Settings_ToggleCryptoMode": "החלף (Rapide / Standard / Premium)",
+  "UI_Settings_ToggleCryptoMode": "החלף (Rapide / Standard / Performant)",
   "UI_Settings_Extensions": "סיומות",
   "UI_Settings_PathsHeader": "נתיבים (יחולו בהפעלה מחדש)",
   "UI_Path_Log": "יומן",

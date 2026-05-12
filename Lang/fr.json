@@ -120,7 +120,7 @@
   "UI_Settings_Encryption": "Chiffrement (CryptoSoft)",
   "UI_Settings_EncryptionDesc": "Extensions de fichiers chiffrées après copie.",
   "UI_Settings_Mode": "Mode",
-  "UI_Settings_ToggleCryptoMode": "Basculer (Rapide / Standard / Premium)",
+  "UI_Settings_ToggleCryptoMode": "Basculer (Rapide / Standard / Performant)",
   "UI_Settings_Extensions": "Extensions",
   "UI_Settings_Priority": "Fichiers prioritaires",
   "UI_Settings_PriorityDesc": "Aucun fichier non prioritaire n'est sauvegardé tant qu'au moins un fichier prioritaire reste à traiter sur un job actif.",
