@@ -25,6 +25,16 @@ public partial class SettingsView : UserControl
         ThemeCombo.SelectedValue = string.Equals(App.SettingsService.Current.Theme, "dark",
             System.StringComparison.OrdinalIgnoreCase) ? "dark" : "light";
         _themeInitialized = true;
+
+        // Toggle des sélecteurs de dossier en fonction du mode (local vs distant).
+        bool remote = !App.IsLocalServer;
+        RemotePathsHint.Visibility = remote ? Visibility.Visible : Visibility.Collapsed;
+        LocalPathsHelp.Visibility  = remote ? Visibility.Collapsed : Visibility.Visible;
+        var browseVisibility = remote ? Visibility.Collapsed : Visibility.Visible;
+        BrowseLogButton.Visibility    = browseVisibility;
+        BrowseStateButton.Visibility  = browseVisibility;
+        BrowseConfigButton.Visibility = browseVisibility;
+        BrowseLangButton.Visibility   = browseVisibility;
     }
 
     private void ThemeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)

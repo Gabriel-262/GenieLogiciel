@@ -13,6 +13,12 @@ public partial class App : Application
     public static SettingsService SettingsService { get; private set; } = null!;
     private static RemoteBackupSession? _session;
 
+    // Vrai si on est connecté au serveur en local (127.0.0.1) → on peut afficher
+    // les sélecteurs de dossier Windows, le file system du client EST celui du
+    // serveur. Faux si on a saisi une IP distante : les chemins doivent alors
+    // exister côté serveur, le sélecteur local n'aurait aucun sens.
+    public static bool IsLocalServer { get; private set; }
+
     protected override async void OnExit(ExitEventArgs e)
     {
         if (_session is not null) await _session.DisposeAsync();
@@ -76,7 +82,11 @@ public partial class App : Application
             ProtocolConstants.DefaultLocalHost,
             ProtocolConstants.DefaultPort,
             TimeSpan.FromMilliseconds(500));
-        if (local is not null) return local;
+        if (local is not null)
+        {
+            IsLocalServer = true;
+            return local;
+        }
 
         // 2. Boucle de saisie IP
         string? lastHost = settings.Current.RemoteServerHost;
@@ -92,6 +102,9 @@ public partial class App : Application
                 input.Host, input.Port, TimeSpan.FromSeconds(3));
             if (session is not null)
             {
+                // Si l'utilisateur a quand même tapé une adresse de loopback,
+                // on garde le mode "local" → les sélecteurs restent utiles.
+                IsLocalServer = IsLoopbackHost(input.Host);
                 settings.Current.RemoteServerHost = input.Host;
                 settings.Current.RemoteServerPort = input.Port;
                 settings.Save();
@@ -102,6 +115,14 @@ public partial class App : Application
             lastPort = input.Port;
             error = $"Impossible de joindre {input.Host}:{input.Port}. Réessaye.";
         }
+    }
+
+    private static bool IsLoopbackHost(string host)
+    {
+        if (string.IsNullOrWhiteSpace(host)) return false;
+        if (host.Equals("localhost", StringComparison.OrdinalIgnoreCase)) return true;
+        return System.Net.IPAddress.TryParse(host, out var ip)
+            && System.Net.IPAddress.IsLoopback(ip);
     }
 
     private static void OnServerDisconnected(object? sender, EventArgs e)
