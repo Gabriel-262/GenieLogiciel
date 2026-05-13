@@ -10,6 +10,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -23,29 +24,39 @@
                    Text="{Binding Mode, StringFormat=Job - {0}}"
                    Style="{StaticResource H1}"/>
 
-        <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource UI_Col_Name}" VerticalAlignment="Center" Margin="0,4"/>
-        <TextBox   Grid.Row="1" Grid.Column="1" Margin="0,4"
+        <!-- Avertissement affiché UNIQUEMENT quand le serveur est distant. Toggle dans le code-behind. -->
+        <Border x:Name="RemotePathHint" Grid.Row="1" Grid.ColumnSpan="3"
+                Margin="0,4,0,8" Padding="10,6" Visibility="Collapsed"
+                Background="#FFF8E1" BorderBrush="#F0C36D" BorderThickness="1" CornerRadius="3">
+            <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#5B4A1E"
+                       Text="Les chemins Source et Cible doivent exister sur la machine serveur (et non sur ce poste client). Saisis-les manuellement."/>
+        </Border>
+
+        <TextBlock Grid.Row="2" Grid.Column="0" Text="{DynamicResource UI_Col_Name}" VerticalAlignment="Center" Margin="0,4"/>
+        <TextBox   Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,4"
                    Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"/>
 
-        <TextBlock Grid.Row="2" Grid.Column="0" Text="{DynamicResource UI_Col_Source}" VerticalAlignment="Center" Margin="0,4"/>
-        <TextBox   Grid.Row="2" Grid.Column="1" Margin="0,4"
-                   Text="{Binding SourcePath, UpdateSourceTrigger=PropertyChanged}"/>
-        <Button    Grid.Row="2" Grid.Column="2" Content="..." Margin="6,4,0,4" Click="BrowseSource_Click"/>
-
-        <TextBlock Grid.Row="3" Grid.Column="0" Text="{DynamicResource UI_Col_Target}" VerticalAlignment="Center" Margin="0,4"/>
+        <TextBlock Grid.Row="3" Grid.Column="0" Text="{DynamicResource UI_Col_Source}" VerticalAlignment="Center" Margin="0,4"/>
         <TextBox   Grid.Row="3" Grid.Column="1" Margin="0,4"
-                   Text="{Binding TargetPath, UpdateSourceTrigger=PropertyChanged}"/>
-        <Button    Grid.Row="3" Grid.Column="2" Content="..." Margin="6,4,0,4" Click="BrowseTarget_Click"/>
+                   Text="{Binding SourcePath, UpdateSourceTrigger=PropertyChanged}"/>
+        <Button    x:Name="BrowseSourceButton" Grid.Row="3" Grid.Column="2"
+                   Content="..." Margin="6,4,0,4" Click="BrowseSource_Click"/>
 
-        <TextBlock Grid.Row="4" Grid.Column="0" Text="{DynamicResource UI_Col_Type}" VerticalAlignment="Center" Margin="0,4"/>
-        <ComboBox  Grid.Row="4" Grid.Column="1" Margin="0,4"
+        <TextBlock Grid.Row="4" Grid.Column="0" Text="{DynamicResource UI_Col_Target}" VerticalAlignment="Center" Margin="0,4"/>
+        <TextBox   Grid.Row="4" Grid.Column="1" Margin="0,4"
+                   Text="{Binding TargetPath, UpdateSourceTrigger=PropertyChanged}"/>
+        <Button    x:Name="BrowseTargetButton" Grid.Row="4" Grid.Column="2"
+                   Content="..." Margin="6,4,0,4" Click="BrowseTarget_Click"/>
+
+        <TextBlock Grid.Row="5" Grid.Column="0" Text="{DynamicResource UI_Col_Type}" VerticalAlignment="Center" Margin="0,4"/>
+        <ComboBox  Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,4"
                    SelectedValue="{Binding Type}"
                    SelectedValuePath="Tag">
             <ComboBoxItem Content="{DynamicResource UI_Form_Type_Full}"         Tag="{x:Static models:BackupType.Full}"/>
             <ComboBoxItem Content="{DynamicResource UI_Form_Type_Differential}" Tag="{x:Static models:BackupType.Differential}"/>
         </ComboBox>
 
-        <StackPanel Grid.Row="7" Grid.ColumnSpan="3" Orientation="Horizontal"
+        <StackPanel Grid.Row="8" Grid.ColumnSpan="3" Orientation="Horizontal"
                     HorizontalAlignment="Right" Margin="0,16,0,0">
             <Button Content="{DynamicResource UI_Btn_Cancel}" Click="Cancel_Click"/>
             <Button Content="{DynamicResource UI_Btn_Save}"   Style="{StaticResource PrimaryButton}"

@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using EasySave.Services;
 using EasySave.ViewModels;
 
 namespace EasySave.Views;
@@ -9,9 +10,21 @@ public partial class JobFormView : UserControl
     public JobFormView()
     {
         InitializeComponent();
+        Loaded += OnLoaded;
     }
 
     private JobFormViewModel Vm => (JobFormViewModel)DataContext;
+
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        // Mode distant : le sélecteur Windows ouvrirait le file system du client
+        // alors que les chemins doivent exister côté serveur. On masque les "..."
+        // et on affiche le bandeau d'avertissement à la place.
+        bool remote = !App.IsLocalServer;
+        RemotePathHint.Visibility    = remote ? Visibility.Visible : Visibility.Collapsed;
+        BrowseSourceButton.Visibility = remote ? Visibility.Collapsed : Visibility.Visible;
+        BrowseTargetButton.Visibility = remote ? Visibility.Collapsed : Visibility.Visible;
+    }
 
     private void BrowseSource_Click(object sender, RoutedEventArgs e)
     {
