@@ -1,517 +1,76 @@
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Diagnostics;
 using EasyLog;
 using EasySave.Models;
 
 namespace EasySave.Services;
 
-// Orchestre l'exécution des jobs : pause/stop, parallélisme, priorité,
-// progression, logs. Les sous-responsabilités sont déléguées à :
-//   - FileScanner       : énumération + partition prioritaires/normaux.
-//   - PriorityGate      : verrou global des fichiers non prioritaires.
-//   - CopyService       : copie cancellable + gate des gros fichiers.
-//   - JobController     : compteur de causes de pause + Stop par job.
+// Facade publique du moteur de sauvegarde. Compose les trois classes
+// extraites (séparation des responsabilités) :
+//   - JobTelemetryPublisher : events de cycle de vie + logs + progression.
+//   - JobRunner             : exécution d'un job (scan + copie parallèle).
+//   - JobOrchestrator       : parallélisme multi-jobs + policies cross-job
+//                             (business software, pause/resume/stop globaux).
+//
+// La signature publique (constructeur, events, méthodes Pause/Resume/Stop,
+// ExecuteJob[s]Async) est inchangée pour ne rien casser côté call-sites
+// (Server/Program.cs, ViewModels, RemoteBackupEngine miroir).
 public class BackupEngine : IBackupEngine
 {
-    private readonly JobRepository _repo;
-    private readonly ILogger _logger;
-    private readonly IBusinessSoftwareMonitor? _businessMonitor;
-    private readonly ICryptoSoft? _crypto;
-    private readonly SettingsService? _settings;
-    private readonly FileScanner _scanner = new();
-    private readonly PriorityGate _priorityGate = new();
-    private readonly CopyService _copier;
-
-    // Un controller PAR job actif.
-    private readonly ConcurrentDictionary<int, JobController> _controllers = new();
+    private readonly JobTelemetryPublisher _telemetry;
+    private readonly JobOrchestrator _orchestrator;
 
     public BackupEngine(JobRepository repo, ILogger logger,
         IBusinessSoftwareMonitor? businessMonitor = null,
         ICryptoSoft? crypto = null,
         SettingsService? settings = null)
     {
-        _repo = repo;
-        _logger = logger;
-        _businessMonitor = businessMonitor;
-        _crypto = crypto;
-        _settings = settings;
-        _copier = new CopyService(settings?.Current.MaxParallelLargeFiles ?? 2);
+        _telemetry = new JobTelemetryPublisher(logger, repo);
+
+        var copier = new CopyService(settings?.Current.MaxParallelLargeFiles ?? 2);
+        var runner = new JobRunner(
+            _telemetry,
+            new FileScanner(),
+            new PriorityGate(),
+            copier,
+            crypto,
+            settings);
+
+        _orchestrator = new JobOrchestrator(runner, _telemetry, repo, settings, businessMonitor);
     }
 
-    public event EventHandler<BackupProgressEventArgs>? ProgressChanged;
-    public event EventHandler<JobLifecycleEventArgs>? JobStarted;
-    public event EventHandler<JobLifecycleEventArgs>? JobCompleted;
-    public event EventHandler<JobLifecycleEventArgs>? JobStopped;
-    public event EventHandler<JobLifecycleEventArgs>? JobPaused;
-    public event EventHandler<JobLifecycleEventArgs>? JobResumed;
+    // === Events : forwarding pur vers le publisher ===
 
-    public bool IsJobPaused(int jobId)
-        => _controllers.TryGetValue(jobId, out var c) && c.IsPaused;
+    public event EventHandler<BackupProgressEventArgs>? ProgressChanged
+    { add => _telemetry.ProgressChanged += value; remove => _telemetry.ProgressChanged -= value; }
+    public event EventHandler<JobLifecycleEventArgs>? JobStarted
+    { add => _telemetry.JobStarted += value; remove => _telemetry.JobStarted -= value; }
+    public event EventHandler<JobLifecycleEventArgs>? JobCompleted
+    { add => _telemetry.JobCompleted += value; remove => _telemetry.JobCompleted -= value; }
+    public event EventHandler<JobLifecycleEventArgs>? JobStopped
+    { add => _telemetry.JobStopped += value; remove => _telemetry.JobStopped -= value; }
+    public event EventHandler<JobLifecycleEventArgs>? JobPaused
+    { add => _telemetry.JobPaused += value; remove => _telemetry.JobPaused -= value; }
+    public event EventHandler<JobLifecycleEventArgs>? JobResumed
+    { add => _telemetry.JobResumed += value; remove => _telemetry.JobResumed -= value; }
 
-    public IReadOnlyCollection<int> ActiveJobIds => _controllers.Keys.ToArray();
+    // === Délégation à l'orchestrateur ===
 
-    // ===== API publique de contrôle =====
+    public bool IsJobPaused(int jobId) => _orchestrator.IsJobPaused(jobId);
+    public IReadOnlyCollection<int> ActiveJobIds => _orchestrator.ActiveJobIds;
 
-    public void Pause(int jobId)  => AddReason(jobId, PauseReason.User);
-    public void Resume(int jobId) => RemoveReason(jobId, PauseReason.User);
-    public void Stop(int jobId)
-    {
-        if (_controllers.TryGetValue(jobId, out var c)) c.RequestStop();
-    }
+    public void Pause(int jobId)  => _orchestrator.Pause(jobId);
+    public void Resume(int jobId) => _orchestrator.Resume(jobId);
+    public void Stop(int jobId)   => _orchestrator.Stop(jobId);
 
-    public void PauseAll()  { foreach (var id in _controllers.Keys) AddReason(id, PauseReason.User); }
-    public void ResumeAll() { foreach (var id in _controllers.Keys) RemoveReason(id, PauseReason.User); }
-    public void StopAll()   { foreach (var c in _controllers.Values) c.RequestStop(); }
+    public void PauseAll()  => _orchestrator.PauseAll();
+    public void ResumeAll() => _orchestrator.ResumeAll();
+    public void StopAll()   => _orchestrator.StopAll();
 
-    public void PauseAllForBusinessSoftware()
-    { foreach (var id in _controllers.Keys) AddReason(id, PauseReason.Business); }
-    public void ResumeAllAfterBusinessSoftware()
-    { foreach (var id in _controllers.Keys) RemoveReason(id, PauseReason.Business); }
-
-    private void AddReason(int jobId, PauseReason reason)
-    {
-        if (_controllers.TryGetValue(jobId, out var c)) c.AddReason(reason);
-    }
-    private void RemoveReason(int jobId, PauseReason reason)
-    {
-        if (_controllers.TryGetValue(jobId, out var c)) c.RemoveReason(reason);
-    }
-
-    // ===== Exécution =====
-
-    public void ExecuteJobs(IEnumerable<int> jobIds)
-        => ExecuteJobsAsync(jobIds).GetAwaiter().GetResult();
-
-    public Task ExecuteJobsAsync(IEnumerable<int> jobIds, CancellationToken ct = default)
-    {
-        var ids = jobIds.ToList();
-        int max = Math.Max(1, _settings?.Current.MaxParallelJobs ?? 4);
-        var sem = new SemaphoreSlim(max);
-
-        var tasks = ids.Select(async id =>
-        {
-            await sem.WaitAsync(ct).ConfigureAwait(false);
-            try
-            {
-                if (ct.IsCancellationRequested) return;
-                var job = _repo.GetJobById(id);
-                if (job is null) return;
-                await Task.Run(() =>
-                {
-                    try { ExecuteJob(job); }
-                    catch (Exception ex)
-                    {
-                        // Avant : catch { } silencieux. Maintenant on log
-                        // pour ne pas perdre la trace en cas de bug.
-                        LogJobError(job, ex);
-                    }
-                }, ct).ConfigureAwait(false);
-            }
-            finally { sem.Release(); }
-        });
-
-        return Task.WhenAll(tasks);
-    }
+    public void PauseAllForBusinessSoftware()  => _orchestrator.PauseAllForBusinessSoftware();
+    public void ResumeAllAfterBusinessSoftware() => _orchestrator.ResumeAllAfterBusinessSoftware();
 
     public Task ExecuteJobAsync(BackupJob job, CancellationToken ct = default)
-        => Task.Run(() => ExecuteJob(job), ct);
+        => _orchestrator.ExecuteJobAsync(job, ct);
 
-    public void ExecuteJob(BackupJob job)
-    {
-        if (!Directory.Exists(job.SourcePath)) return;
-
-        var controller = new JobController();
-        if (!_controllers.TryAdd(job.Id, controller))
-        {
-            controller.Dispose();
-            return;
-        }
-
-        controller.Paused  += r => JobPaused?.Invoke(this,
-            new JobLifecycleEventArgs { JobId = job.Id, JobName = job.Name, Reason = r });
-        controller.Resumed += r => JobResumed?.Invoke(this,
-            new JobLifecycleEventArgs { JobId = job.Id, JobName = job.Name, Reason = r });
-
-        if (_businessMonitor is not null && _businessMonitor.IsRunning())
-        {
-            controller.AddReason(PauseReason.Business);
-            LogBusinessSoftwareDetected(job);
-        }
-
-        Directory.CreateDirectory(job.TargetPath);
-        JobStarted?.Invoke(this, new JobLifecycleEventArgs { JobId = job.Id, JobName = job.Name });
-
-        bool stopped = false;
-        try
-        {
-            var scan = _scanner.Scan(job.SourcePath, IsPriority);
-
-            int maxParallelFiles = Math.Max(1, _settings?.Current.MaxParallelFilesPerJob ?? 4);
-            _repo.UpdateState(job.Id, e =>
-            {
-                e.Status = JobStatus.Active;
-                e.TotalFiles = scan.TotalFiles;
-                e.TotalSizeBytes = scan.TotalSizeBytes;
-                e.RemainingFiles = scan.TotalFiles;
-                e.RemainingSizeBytes = scan.TotalSizeBytes;
-                e.ProgressPercent = 0;
-                e.LastActionTime = DateTime.Now;
-                e.MaxParallelFiles = maxParallelFiles;
-                e.ThreadsUsed = 0;
-                e.ActiveThreads = 0;
-            });
-
-            var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = maxParallelFiles };
-
-            int processed = 0;
-            long bytesDone = 0;
-            int activeThreads = 0;
-            var threadsUsed = new ConcurrentDictionary<int, byte>();
-            var jobStopwatch = Stopwatch.StartNew();
-
-            _logger.Log(new LogEntry
-            {
-                Timestamp = DateTime.Now,
-                JobId = job.Id,
-                BackupName = job.Name,
-                Action = LogAction.JobStarted,
-                SourceFilePath = job.SourcePath,
-                DestinationFilePath = job.TargetPath,
-                MaxDegreeOfParallelism = maxParallelFiles,
-                ChunkCount = scan.TotalFiles,
-                ThreadId = Environment.CurrentManagedThreadId
-            });
-
-            // Réserve auprès du gate global les fichiers prioritaires de ce job.
-            _priorityGate.Register(scan.PriorityFiles.Count);
-            int priorityDone = 0;
-
-            try
-            {
-                if (scan.PriorityFiles.Count > 0)
-                {
-                    // Partitionneur dynamique (NoBuffering) : équilibre la charge
-                    // quand les tailles de fichiers varient beaucoup. Le défaut
-                    // sur IList<T> est un partitionnement par plages contiguës
-                    // qui crée des déséquilibres importants entre threads.
-                    var partitioner = Partitioner.Create(scan.PriorityFiles,
-                        EnumerablePartitionerOptions.NoBuffering);
-                    Parallel.ForEach(partitioner, parallelOptions, (sourceFile, state) =>
-                    {
-                        if (controller.IsStopRequested) { state.Stop(); return; }
-                        try { ProcessFile(job, controller, sourceFile, isPriority: true,
-                                          scan.TotalFiles, scan.TotalSizeBytes, threadsUsed,
-                                          ref processed, ref bytesDone, ref activeThreads); }
-                        finally
-                        {
-                            Interlocked.Increment(ref priorityDone);
-                            _priorityGate.NotifyOneDone();
-                        }
-                    });
-                }
-
-                // Si on est sorti tôt (stop), rendre les crédits prioritaires
-                // restants au gate pour ne pas bloquer les autres jobs.
-                int leftover = scan.PriorityFiles.Count - Volatile.Read(ref priorityDone);
-                if (leftover > 0) _priorityGate.Release(leftover);
-
-                if (!controller.IsStopRequested && scan.NormalFiles.Count > 0)
-                {
-                    var partitioner = Partitioner.Create(scan.NormalFiles,
-                        EnumerablePartitionerOptions.NoBuffering);
-                    Parallel.ForEach(partitioner, parallelOptions, (sourceFile, state) =>
-                    {
-                        if (controller.IsStopRequested) { state.Stop(); return; }
-                        ProcessFile(job, controller, sourceFile, isPriority: false,
-                                    scan.TotalFiles, scan.TotalSizeBytes, threadsUsed,
-                                    ref processed, ref bytesDone, ref activeThreads);
-                    });
-                }
-            }
-            finally
-            {
-                // Filet : si quelque chose a explosé, on ne laisse pas de crédit
-                // prioritaire fantôme dans le gate.
-                int residual = scan.PriorityFiles.Count - Volatile.Read(ref priorityDone);
-                if (residual > 0) _priorityGate.Release(residual);
-            }
-
-            stopped = controller.IsStopRequested;
-            jobStopwatch.Stop();
-
-            _logger.Log(new LogEntry
-            {
-                Timestamp = DateTime.Now,
-                JobId = job.Id,
-                BackupName = job.Name,
-                Action = stopped ? LogAction.JobStopped : LogAction.JobCompleted,
-                SourceFilePath = job.SourcePath,
-                DestinationFilePath = job.TargetPath,
-                FileSizeBytes = scan.TotalSizeBytes,
-                TransferTimeMs = jobStopwatch.ElapsedMilliseconds,
-                MaxDegreeOfParallelism = maxParallelFiles,
-                ThreadsUsed = threadsUsed.Count,
-                ChunkCount = scan.TotalFiles,
-                ThreadId = Environment.CurrentManagedThreadId
-            });
-        }
-        finally
-        {
-            _repo.ClearState(job.Id);
-            if (_controllers.TryRemove(job.Id, out var c)) c.Dispose();
-            var args = new JobLifecycleEventArgs { JobId = job.Id, JobName = job.Name };
-            if (stopped) JobStopped?.Invoke(this, args);
-            else         JobCompleted?.Invoke(this, args);
-        }
-    }
-
-    // Corps de traitement d'un fichier (appelé en parallèle).
-    private void ProcessFile(BackupJob job, JobController controller, FileInfo sourceFile, bool isPriority,
-        int totalFiles, long totalSize, ConcurrentDictionary<int, byte> threadsUsed,
-        ref int processed, ref long bytesDone, ref int activeThreads)
-    {
-        if (controller.IsStopRequested) return;
-
-        // Les non prioritaires attendent que le gate global soit ouvert.
-        if (!isPriority)
-        {
-            _priorityGate.WaitForNoPriority();
-            if (controller.IsStopRequested) return;
-        }
-
-        threadsUsed.TryAdd(Environment.CurrentManagedThreadId, 0);
-        Interlocked.Increment(ref activeThreads);
-        try
-        {
-            ProcessFileCore(job, controller, sourceFile, totalFiles, totalSize,
-                threadsUsed, ref processed, ref bytesDone, ref activeThreads);
-        }
-        finally
-        {
-            Interlocked.Decrement(ref activeThreads);
-        }
-    }
-
-    private void ProcessFileCore(BackupJob job, JobController controller, FileInfo sourceFile,
-        int totalFiles, long totalSize, ConcurrentDictionary<int, byte> threadsUsed,
-        ref int processed, ref long bytesDone, ref int activeThreads)
-    {
-
-        // Pause = effective ICI, donc APRÈS le fichier précédent et AVANT le
-        // suivant (conformément au CDC).
-        controller.WaitIfPaused();
-        if (controller.IsStopRequested) return;
-
-        if (!WaitWhileFileLocked(sourceFile, job, controller)) return;
-
-        sourceFile.Refresh();
-        if (!sourceFile.Exists)
-        {
-            int doneCount = Interlocked.Increment(ref processed);
-            long doneBytes = Interlocked.Read(ref bytesDone);
-            PushProgress(job, sourceFile.FullName, string.Empty, doneCount, totalFiles, doneBytes, totalSize,
-                threadsUsed.Count, Volatile.Read(ref activeThreads));
-            return;
-        }
-
-        string relative = Path.GetRelativePath(job.SourcePath, sourceFile.FullName);
-        string destination = Path.Combine(job.TargetPath, relative);
-
-        if (job.Type == BackupType.Differential && !NeedsCopy(sourceFile, destination))
-        {
-            int doneCount = Interlocked.Increment(ref processed);
-            long doneBytes = Interlocked.Add(ref bytesDone, sourceFile.Length);
-            PushProgress(job, sourceFile.FullName, destination, doneCount, totalFiles, doneBytes, totalSize,
-                threadsUsed.Count, Volatile.Read(ref activeThreads));
-            return;
-        }
-
-        string? destDir = Path.GetDirectoryName(destination);
-        if (!string.IsNullOrEmpty(destDir)) Directory.CreateDirectory(destDir);
-
-        bool existedBefore = File.Exists(destination);
-        long thresholdBytes = (long)Math.Max(0, _settings?.Current.LargeFileThresholdKb ?? 0) * 1024;
-
-        long elapsedMs = _copier.Copy(sourceFile.FullName, destination, thresholdBytes, controller.StopToken);
-        if (controller.IsStopRequested) return;
-
-        long cryptoMs = 0;
-        if (_crypto is not null && elapsedMs >= 0 && ShouldEncrypt(sourceFile.FullName))
-            cryptoMs = _crypto.Encrypt(destination);
-
-        if (elapsedMs >= 0)
-        {
-            try { File.SetLastWriteTimeUtc(destination, sourceFile.LastWriteTimeUtc); }
-            catch { /* horodatage best-effort */ }
-        }
-
-        _logger.Log(new LogEntry
-        {
-            Timestamp = DateTime.Now,
-            JobId = job.Id,
-            BackupName = job.Name,
-            Action = existedBefore ? LogAction.Update : LogAction.Create,
-            SourceFilePath = sourceFile.FullName,
-            DestinationFilePath = destination,
-            FileSizeBytes = sourceFile.Length,
-            TransferTimeMs = elapsedMs,
-            CryptoTimeMs = cryptoMs,
-            ThreadId = Environment.CurrentManagedThreadId
-        });
-
-        int processedSnap = Interlocked.Increment(ref processed);
-        long bytesSnap = Interlocked.Add(ref bytesDone, sourceFile.Length);
-        PushProgress(job, sourceFile.FullName, destination, processedSnap, totalFiles, bytesSnap, totalSize,
-            threadsUsed.Count, Volatile.Read(ref activeThreads));
-    }
-
-    private bool WaitWhileFileLocked(FileInfo sourceFile, BackupJob job, JobController controller)
-    {
-        if (!IsFileLocked(sourceFile)) return true;
-
-        controller.AddReason(PauseReason.FileLocked);
-        try
-        {
-            _repo.UpdateState(job.Id, e =>
-            {
-                e.Status = JobStatus.Paused;
-                e.LastActionTime = DateTime.Now;
-                e.CurrentSourceFile = sourceFile.FullName;
-            });
-
-            _logger.Log(new LogEntry
-            {
-                Timestamp = DateTime.Now,
-                JobId = job.Id,
-                BackupName = job.Name,
-                Action = LogAction.BusinessSoftwareDetected,
-                SourceFilePath = sourceFile.FullName,
-                DestinationFilePath = string.Empty,
-                FileSizeBytes = sourceFile.Exists ? sourceFile.Length : 0,
-                TransferTimeMs = 0
-            });
-
-            while (IsFileLocked(sourceFile))
-            {
-                if (controller.IsStopRequested) return false;
-                Thread.Sleep(500);
-                sourceFile.Refresh();
-            }
-            return true;
-        }
-        finally
-        {
-            controller.RemoveReason(PauseReason.FileLocked);
-        }
-    }
-
-    private static bool IsFileLocked(FileInfo file)
-    {
-        if (!file.Exists) return false;
-        try
-        {
-            using var stream = file.Open(FileMode.Open, FileAccess.Read, FileShare.None);
-            return false;
-        }
-        catch (IOException)            { return true; }
-        catch (UnauthorizedAccessException) { return true; }
-    }
-
-    private void LogBusinessSoftwareDetected(BackupJob job)
-    {
-        _logger.Log(new LogEntry
-        {
-            Timestamp = DateTime.Now,
-            JobId = job.Id,
-            BackupName = job.Name,
-            Action = LogAction.BusinessSoftwareDetected,
-            SourceFilePath = job.SourcePath,
-            DestinationFilePath = job.TargetPath,
-            FileSizeBytes = 0,
-            TransferTimeMs = 0
-        });
-    }
-
-    private void LogJobError(BackupJob job, Exception ex)
-    {
-        _logger.Log(new LogEntry
-        {
-            Timestamp = DateTime.Now,
-            JobId = job.Id,
-            BackupName = job.Name,
-            Action = LogAction.JobStopped,
-            SourceFilePath = job.SourcePath,
-            DestinationFilePath = $"ERROR: {ex.GetType().Name}: {ex.Message}",
-            FileSizeBytes = 0,
-            TransferTimeMs = 0
-        });
-    }
-
-    private void PushProgress(BackupJob job, string sourceFile, string destinationFile,
-        int processed, int totalFiles, long bytesDone, long totalBytes,
-        int threadsUsed, int activeThreads)
-    {
-        double percent = totalFiles == 0 ? 100 : (double)processed * 100 / totalFiles;
-
-        _repo.UpdateState(job.Id, e =>
-        {
-            e.LastActionTime = DateTime.Now;
-            e.CurrentSourceFile = sourceFile;
-            e.CurrentDestinationFile = destinationFile;
-            e.RemainingFiles = totalFiles - processed;
-            e.RemainingSizeBytes = totalBytes - bytesDone;
-            e.ProgressPercent = percent;
-            e.ThreadsUsed = threadsUsed;
-            e.ActiveThreads = activeThreads;
-        });
-
-        ProgressChanged?.Invoke(this, new BackupProgressEventArgs
-        {
-            JobId = job.Id,
-            JobName = job.Name,
-            CurrentSourceFile = sourceFile,
-            CurrentDestinationFile = destinationFile,
-            TotalFiles = totalFiles,
-            ProcessedFiles = processed,
-            TotalSizeBytes = totalBytes,
-            BytesDone = bytesDone,
-            ProgressPercent = percent
-        });
-    }
-
-    private bool IsPriority(string sourceFilePath)
-    {
-        var extensions = _settings?.Current.PriorityExtensions;
-        if (extensions is null || extensions.Count == 0) return false;
-        string ext = Path.GetExtension(sourceFilePath);
-        if (string.IsNullOrEmpty(ext)) return false;
-        return extensions.Any(e => string.Equals(
-            NormalizeExtension(e), ext, StringComparison.OrdinalIgnoreCase));
-    }
-
-    private bool ShouldEncrypt(string sourceFilePath)
-    {
-        var extensions = _settings?.Current.EncryptedExtensions;
-        if (extensions is null || extensions.Count == 0) return false;
-        string ext = Path.GetExtension(sourceFilePath);
-        if (string.IsNullOrEmpty(ext)) return false;
-        return extensions.Any(e => string.Equals(
-            NormalizeExtension(e), ext, StringComparison.OrdinalIgnoreCase));
-    }
-
-    internal static string NormalizeExtension(string ext)
-    {
-        ext = ext.Trim().ToLowerInvariant();
-        if (ext.Length == 0) return ext;
-        return ext.StartsWith('.') ? ext : "." + ext;
-    }
-
-    private static bool NeedsCopy(FileInfo source, string destinationPath)
-    {
-        if (!File.Exists(destinationPath)) return true;
-        DateTime sourceTime = source.LastWriteTimeUtc;
-        DateTime destTime   = File.GetLastWriteTimeUtc(destinationPath);
-        return Math.Abs((sourceTime - destTime).TotalSeconds) > 2;
-    }
+    public Task ExecuteJobsAsync(IEnumerable<int> jobIds, CancellationToken ct = default)
+        => _orchestrator.ExecuteJobsAsync(jobIds, ct);
 }

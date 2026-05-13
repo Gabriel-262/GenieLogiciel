@@ -4,7 +4,7 @@ using EasySave.Models;
 
 namespace EasySave.Services;
 
-public class JobRepository : IJobRepository, IDisposable
+public class JobRepository : IJobRepository, IJobStateStore, IDisposable
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 

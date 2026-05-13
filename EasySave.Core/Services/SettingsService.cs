@@ -4,7 +4,7 @@ using EasySave.Models;
 
 namespace EasySave.Services;
 
-public class SettingsService
+public class SettingsService : ISettingsProvider
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
