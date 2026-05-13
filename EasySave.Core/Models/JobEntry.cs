@@ -18,6 +18,15 @@ public class JobEntry
     public string CurrentSourceFile { get; set; } = string.Empty;
     public string CurrentDestinationFile { get; set; } = string.Empty;
 
+    // Observabilité du multithreading :
+    //  - MaxParallelFiles : limite configurée (MaxParallelFilesPerJob).
+    //  - ThreadsUsed      : nombre de threads distincts ayant traité un
+    //                       fichier de ce job (cumul depuis le démarrage).
+    //  - ActiveThreads    : nombre de threads actuellement dans ProcessFile.
+    public int MaxParallelFiles { get; set; }
+    public int ThreadsUsed { get; set; }
+    public int ActiveThreads { get; set; }
+
     public BackupJob ToJob() => new()
     {
         Id = Id,

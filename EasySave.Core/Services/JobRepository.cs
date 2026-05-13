@@ -165,6 +165,7 @@ public class JobRepository : IJobRepository, IDisposable
             entry.RemainingSizeBytes = 0;
             entry.CurrentSourceFile = string.Empty;
             entry.CurrentDestinationFile = string.Empty;
+            entry.ActiveThreads = 0;
             // Fin de job = flush immédiat pour ne pas laisser un état partiel
             // dans le state.json si le process meurt juste après.
             SaveNow();

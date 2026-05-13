@@ -46,10 +46,15 @@ public class AppSettings
     public int MaxParallelFilesPerJob { get; set; } = 4;
 
     // Bande passante : taille (en Ko) au-delà de laquelle un fichier est
-    // considéré "gros". Deux fichiers >= ce seuil ne sont jamais copiés en
-    // même temps (sérialisation globale, tous jobs confondus).
-    // 0 = désactivé (pas de sérialisation).
+    // considéré "gros". Au plus MaxParallelLargeFiles fichiers >= ce seuil
+    // sont copiés en même temps (gate global, tous jobs confondus).
+    // 0 = désactivé (pas de gate, parallélisme libre).
     public int LargeFileThresholdKb { get; set; } = 1024;
+
+    // Nombre maximum de "gros fichiers" copiés simultanément (gate global).
+    // Sur SSD/NVMe, 2-3 sature mieux la bande passante qu'une sérialisation
+    // stricte à 1. Sur HDD, garder 1.
+    public int MaxParallelLargeFiles { get; set; } = 2;
 
     // === Champs CLIENT uniquement (ignorés côté serveur) ===
     // Dernière IP/port utilisés pour se connecter au serveur. Si 127.0.0.1

@@ -25,6 +25,7 @@
   "MaxParallelJobs": 4,
   "MaxParallelFilesPerJob": 4,
   "LargeFileThresholdKb": 1024,
+  "MaxParallelLargeFiles": 2,
   "RemoteServerHost": null,
   "RemoteServerPort": null
 }

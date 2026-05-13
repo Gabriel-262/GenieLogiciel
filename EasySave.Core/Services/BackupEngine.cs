@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using EasyLog;
 using EasySave.Models;
@@ -20,7 +21,7 @@ public class BackupEngine : IBackupEngine
     private readonly SettingsService? _settings;
     private readonly FileScanner _scanner = new();
     private readonly PriorityGate _priorityGate = new();
-    private readonly CopyService _copier = new();
+    private readonly CopyService _copier;
 
     // Un controller PAR job actif.
     private readonly ConcurrentDictionary<int, JobController> _controllers = new();
@@ -35,6 +36,7 @@ public class BackupEngine : IBackupEngine
         _businessMonitor = businessMonitor;
         _crypto = crypto;
         _settings = settings;
+        _copier = new CopyService(settings?.Current.MaxParallelLargeFiles ?? 2);
     }
 
     public event EventHandler<BackupProgressEventArgs>? ProgressChanged;
@@ -145,6 +147,7 @@ public class BackupEngine : IBackupEngine
         {
             var scan = _scanner.Scan(job.SourcePath, IsPriority);
 
+            int maxParallelFiles = Math.Max(1, _settings?.Current.MaxParallelFilesPerJob ?? 4);
             _repo.UpdateState(job.Id, e =>
             {
                 e.Status = JobStatus.Active;
@@ -154,13 +157,16 @@ public class BackupEngine : IBackupEngine
                 e.RemainingSizeBytes = scan.TotalSizeBytes;
                 e.ProgressPercent = 0;
                 e.LastActionTime = DateTime.Now;
+                e.MaxParallelFiles = maxParallelFiles;
+                e.ThreadsUsed = 0;
+                e.ActiveThreads = 0;
             });
 
-            int maxParallelFiles = Math.Max(1, _settings?.Current.MaxParallelFilesPerJob ?? 4);
             var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = maxParallelFiles };
 
             int processed = 0;
             long bytesDone = 0;
+            int activeThreads = 0;
             var threadsUsed = new ConcurrentDictionary<int, byte>();
             var jobStopwatch = Stopwatch.StartNew();
 
@@ -185,16 +191,18 @@ public class BackupEngine : IBackupEngine
             {
                 if (scan.PriorityFiles.Count > 0)
                 {
-                    // L'overload avec ParallelLoopState permet d'appeler state.Stop()
-                    // dès qu'on détecte le Stop utilisateur : Parallel.ForEach
-                    // cesse de dispatcher de nouvelles itérations, au lieu de
-                    // boucler en return rapide sur N fichiers restants.
-                    Parallel.ForEach(scan.PriorityFiles, parallelOptions, (sourceFile, state) =>
+                    // Partitionneur dynamique (NoBuffering) : équilibre la charge
+                    // quand les tailles de fichiers varient beaucoup. Le défaut
+                    // sur IList<T> est un partitionnement par plages contiguës
+                    // qui crée des déséquilibres importants entre threads.
+                    var partitioner = Partitioner.Create(scan.PriorityFiles,
+                        EnumerablePartitionerOptions.NoBuffering);
+                    Parallel.ForEach(partitioner, parallelOptions, (sourceFile, state) =>
                     {
                         if (controller.IsStopRequested) { state.Stop(); return; }
                         try { ProcessFile(job, controller, sourceFile, isPriority: true,
                                           scan.TotalFiles, scan.TotalSizeBytes, threadsUsed,
-                                          ref processed, ref bytesDone); }
+                                          ref processed, ref bytesDone, ref activeThreads); }
                         finally
                         {
                             Interlocked.Increment(ref priorityDone);
@@ -210,12 +218,14 @@ public class BackupEngine : IBackupEngine
 
                 if (!controller.IsStopRequested && scan.NormalFiles.Count > 0)
                 {
-                    Parallel.ForEach(scan.NormalFiles, parallelOptions, (sourceFile, state) =>
+                    var partitioner = Partitioner.Create(scan.NormalFiles,
+                        EnumerablePartitionerOptions.NoBuffering);
+                    Parallel.ForEach(partitioner, parallelOptions, (sourceFile, state) =>
                     {
                         if (controller.IsStopRequested) { state.Stop(); return; }
                         ProcessFile(job, controller, sourceFile, isPriority: false,
                                     scan.TotalFiles, scan.TotalSizeBytes, threadsUsed,
-                                    ref processed, ref bytesDone);
+                                    ref processed, ref bytesDone, ref activeThreads);
                     });
                 }
             }
@@ -259,7 +269,7 @@ public class BackupEngine : IBackupEngine
     // Corps de traitement d'un fichier (appelé en parallèle).
     private void ProcessFile(BackupJob job, JobController controller, FileInfo sourceFile, bool isPriority,
         int totalFiles, long totalSize, ConcurrentDictionary<int, byte> threadsUsed,
-        ref int processed, ref long bytesDone)
+        ref int processed, ref long bytesDone, ref int activeThreads)
     {
         if (controller.IsStopRequested) return;
 
@@ -271,6 +281,22 @@ public class BackupEngine : IBackupEngine
         }
 
         threadsUsed.TryAdd(Environment.CurrentManagedThreadId, 0);
+        Interlocked.Increment(ref activeThreads);
+        try
+        {
+            ProcessFileCore(job, controller, sourceFile, totalFiles, totalSize,
+                threadsUsed, ref processed, ref bytesDone, ref activeThreads);
+        }
+        finally
+        {
+            Interlocked.Decrement(ref activeThreads);
+        }
+    }
+
+    private void ProcessFileCore(BackupJob job, JobController controller, FileInfo sourceFile,
+        int totalFiles, long totalSize, ConcurrentDictionary<int, byte> threadsUsed,
+        ref int processed, ref long bytesDone, ref int activeThreads)
+    {
 
         // Pause = effective ICI, donc APRÈS le fichier précédent et AVANT le
         // suivant (conformément au CDC).
@@ -284,7 +310,8 @@ public class BackupEngine : IBackupEngine
         {
             int doneCount = Interlocked.Increment(ref processed);
             long doneBytes = Interlocked.Read(ref bytesDone);
-            PushProgress(job, sourceFile.FullName, string.Empty, doneCount, totalFiles, doneBytes, totalSize);
+            PushProgress(job, sourceFile.FullName, string.Empty, doneCount, totalFiles, doneBytes, totalSize,
+                threadsUsed.Count, Volatile.Read(ref activeThreads));
             return;
         }
 
@@ -295,7 +322,8 @@ public class BackupEngine : IBackupEngine
         {
             int doneCount = Interlocked.Increment(ref processed);
             long doneBytes = Interlocked.Add(ref bytesDone, sourceFile.Length);
-            PushProgress(job, sourceFile.FullName, destination, doneCount, totalFiles, doneBytes, totalSize);
+            PushProgress(job, sourceFile.FullName, destination, doneCount, totalFiles, doneBytes, totalSize,
+                threadsUsed.Count, Volatile.Read(ref activeThreads));
             return;
         }
 
@@ -334,7 +362,8 @@ public class BackupEngine : IBackupEngine
 
         int processedSnap = Interlocked.Increment(ref processed);
         long bytesSnap = Interlocked.Add(ref bytesDone, sourceFile.Length);
-        PushProgress(job, sourceFile.FullName, destination, processedSnap, totalFiles, bytesSnap, totalSize);
+        PushProgress(job, sourceFile.FullName, destination, processedSnap, totalFiles, bytesSnap, totalSize,
+            threadsUsed.Count, Volatile.Read(ref activeThreads));
     }
 
     private bool WaitWhileFileLocked(FileInfo sourceFile, BackupJob job, JobController controller)
@@ -420,7 +449,8 @@ public class BackupEngine : IBackupEngine
     }
 
     private void PushProgress(BackupJob job, string sourceFile, string destinationFile,
-        int processed, int totalFiles, long bytesDone, long totalBytes)
+        int processed, int totalFiles, long bytesDone, long totalBytes,
+        int threadsUsed, int activeThreads)
     {
         double percent = totalFiles == 0 ? 100 : (double)processed * 100 / totalFiles;
 
@@ -432,6 +462,8 @@ public class BackupEngine : IBackupEngine
             e.RemainingFiles = totalFiles - processed;
             e.RemainingSizeBytes = totalBytes - bytesDone;
             e.ProgressPercent = percent;
+            e.ThreadsUsed = threadsUsed;
+            e.ActiveThreads = activeThreads;
         });
 
         ProgressChanged?.Invoke(this, new BackupProgressEventArgs
