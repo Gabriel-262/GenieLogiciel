@@ -216,31 +216,52 @@
                                             </Style>
                                         </StackPanel.Style>
 
-                                        <!-- Pause when running, Resume when paused (single toggle) -->
-                                        <Button FontFamily="Segoe MDL2 Assets" FontSize="13">
+                                        <!-- Pause (visible when running) -->
+                                        <Button ToolTip="Pause"
+                                                Command="{Binding Progress.PauseCommand}">
                                             <Button.Style>
                                                 <Style TargetType="Button" BasedOn="{StaticResource IconButton}">
-                                                    <Setter Property="ToolTip" Value="Pause"/>
-                                                    <Setter Property="Command" Value="{Binding Progress.PauseCommand}"/>
-                                                    <Setter Property="Content" Value="&#xE769;"/>
+                                                    <Setter Property="Visibility" Value="Visible"/>
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding Progress.IsPaused}" Value="True">
-                                                            <Setter Property="ToolTip" Value="Reprendre"/>
-                                                            <Setter Property="Command" Value="{Binding Progress.ResumeCommand}"/>
-                                                            <Setter Property="Content" Value="&#xE768;"/>
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
                                             </Button.Style>
+                                            <TextBlock Text="&#xE769;"
+                                                       FontFamily="Segoe MDL2 Assets"
+                                                       FontSize="13"/>
                                         </Button>
 
+                                        <!-- Resume (visible when paused) -->
+                                        <Button ToolTip="Reprendre"
+                                                Command="{Binding Progress.ResumeCommand}">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource IconButton}">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Progress.IsPaused}" Value="True">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                            <TextBlock Text="&#xE768;"
+                                                       FontFamily="Segoe MDL2 Assets"
+                                                       FontSize="13"/>
+                                        </Button>
+
+                                        <!-- Stop -->
                                         <Button Style="{StaticResource DangerButton}"
                                                 ToolTip="Arrêter"
-                                                FontFamily="Segoe MDL2 Assets"
-                                                FontSize="13"
-                                                Content="&#xE71A;"
                                                 MinWidth="38"
-                                                Command="{Binding Progress.StopCommand}"/>
+                                                Command="{Binding Progress.StopCommand}">
+                                            <TextBlock Text="&#xE71A;"
+                                                       FontFamily="Segoe MDL2 Assets"
+                                                       FontSize="13"
+                                                       Foreground="{DynamicResource DangerForegroundBrush}"/>
+                                        </Button>
                                     </StackPanel>
                                 </Grid>
 
