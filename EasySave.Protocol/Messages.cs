@@ -8,37 +8,37 @@ namespace EasySave.Protocol;
 public static class MessageTypes
 {
     // === Commandes (client → serveur) ===
-    public const string CmdGetSnapshot   = "cmd.snapshot";
-    public const string CmdGetJobs       = "cmd.jobs.list";
-    public const string CmdAddJob        = "cmd.jobs.add";
-    public const string CmdUpdateJob     = "cmd.jobs.update";
-    public const string CmdDeleteJob     = "cmd.jobs.delete";
-    public const string CmdRunJobs       = "cmd.jobs.run";
-    public const string CmdPauseJob      = "cmd.jobs.pause";
-    public const string CmdResumeJob     = "cmd.jobs.resume";
-    public const string CmdStopJob       = "cmd.jobs.stop";
-    public const string CmdPauseAll      = "cmd.jobs.pauseAll";
-    public const string CmdResumeAll     = "cmd.jobs.resumeAll";
-    public const string CmdStopAll       = "cmd.jobs.stopAll";
-    public const string CmdGetSettings   = "cmd.settings.get";
+    public const string CmdGetSnapshot = "cmd.snapshot";
+    public const string CmdGetJobs = "cmd.jobs.list";
+    public const string CmdAddJob = "cmd.jobs.add";
+    public const string CmdUpdateJob = "cmd.jobs.update";
+    public const string CmdDeleteJob = "cmd.jobs.delete";
+    public const string CmdRunJobs = "cmd.jobs.run";
+    public const string CmdPauseJob = "cmd.jobs.pause";
+    public const string CmdResumeJob = "cmd.jobs.resume";
+    public const string CmdStopJob = "cmd.jobs.stop";
+    public const string CmdPauseAll = "cmd.jobs.pauseAll";
+    public const string CmdResumeAll = "cmd.jobs.resumeAll";
+    public const string CmdStopAll = "cmd.jobs.stopAll";
+    public const string CmdGetSettings = "cmd.settings.get";
     public const string CmdUpdateSettings = "cmd.settings.update";
 
     // === Réponses (serveur → client, corrélées) ===
-    public const string RspOk            = "rsp.ok";
-    public const string RspError         = "rsp.error";
-    public const string RspSnapshot      = "rsp.snapshot";
-    public const string RspJobs          = "rsp.jobs";
-    public const string RspJob           = "rsp.job";
-    public const string RspSettings      = "rsp.settings";
+    public const string RspOk = "rsp.ok";
+    public const string RspError = "rsp.error";
+    public const string RspSnapshot = "rsp.snapshot";
+    public const string RspJobs = "rsp.jobs";
+    public const string RspJob = "rsp.job";
+    public const string RspSettings = "rsp.settings";
 
     // === Événements (serveur → tous clients) ===
-    public const string EvtProgress      = "evt.progress";
-    public const string EvtJobStarted    = "evt.job.started";
-    public const string EvtJobCompleted  = "evt.job.completed";
-    public const string EvtJobStopped    = "evt.job.stopped";
-    public const string EvtJobPaused     = "evt.job.paused";
-    public const string EvtJobResumed    = "evt.job.resumed";
-    public const string EvtJobsChanged   = "evt.jobs.changed";
+    public const string EvtProgress = "evt.progress";
+    public const string EvtJobStarted = "evt.job.started";
+    public const string EvtJobCompleted = "evt.job.completed";
+    public const string EvtJobStopped = "evt.job.stopped";
+    public const string EvtJobPaused = "evt.job.paused";
+    public const string EvtJobResumed = "evt.job.resumed";
+    public const string EvtJobsChanged = "evt.jobs.changed";
     public const string EvtSettingsChanged = "evt.settings.changed";
 }
 
@@ -104,10 +104,10 @@ public sealed class SettingsPayload
 // Codes d'erreur standard côté serveur. Le client peut switcher dessus.
 public static class ErrorCodes
 {
-    public const string JobNotFound       = "job.notFound";
+    public const string JobNotFound = "job.notFound";
     public const string JobAlreadyRunning = "job.alreadyRunning";
-    public const string MaxJobsReached    = "jobs.maxReached";
-    public const string InvalidPayload    = "msg.invalidPayload";
-    public const string UnknownCommand    = "msg.unknownCommand";
-    public const string Internal          = "internal";
+    public const string MaxJobsReached = "jobs.maxReached";
+    public const string InvalidPayload = "msg.invalidPayload";
+    public const string UnknownCommand = "msg.unknownCommand";
+    public const string Internal = "internal";
 }

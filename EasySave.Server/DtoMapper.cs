@@ -11,14 +11,14 @@ internal static class DtoMapper
 {
     public static BackupTypeDto ToDto(this BackupType t) => t switch
     {
-        BackupType.Full         => BackupTypeDto.Full,
+        BackupType.Full => BackupTypeDto.Full,
         BackupType.Differential => BackupTypeDto.Differential,
         _ => BackupTypeDto.Full
     };
 
     public static BackupType FromDto(this BackupTypeDto t) => t switch
     {
-        BackupTypeDto.Full         => BackupType.Full,
+        BackupTypeDto.Full => BackupType.Full,
         BackupTypeDto.Differential => BackupType.Differential,
         _ => BackupType.Full
     };
@@ -26,15 +26,15 @@ internal static class DtoMapper
     public static JobStatusDto ToDto(this JobStatus s) => s switch
     {
         JobStatus.Inactive => JobStatusDto.Inactive,
-        JobStatus.Active   => JobStatusDto.Active,
-        JobStatus.Paused   => JobStatusDto.Paused,
+        JobStatus.Active => JobStatusDto.Active,
+        JobStatus.Paused => JobStatusDto.Paused,
         _ => JobStatusDto.Inactive
     };
 
     public static PauseReasonDto ToDto(this PauseReason r) => r switch
     {
-        PauseReason.User       => PauseReasonDto.User,
-        PauseReason.Business   => PauseReasonDto.Business,
+        PauseReason.User => PauseReasonDto.User,
+        PauseReason.Business => PauseReasonDto.Business,
         PauseReason.FileLocked => PauseReasonDto.FileLocked,
         _ => PauseReasonDto.User
     };

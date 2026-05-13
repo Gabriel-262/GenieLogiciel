@@ -86,21 +86,21 @@ public sealed class TcpBackupServer : IAsyncDisposable
     private void AttachEngineEvents()
     {
         _engine.ProgressChanged += OnProgress;
-        _engine.JobStarted   += OnJobStarted;
+        _engine.JobStarted += OnJobStarted;
         _engine.JobCompleted += OnJobCompleted;
-        _engine.JobStopped   += OnJobStopped;
-        _engine.JobPaused    += OnJobPaused;
-        _engine.JobResumed   += OnJobResumed;
+        _engine.JobStopped += OnJobStopped;
+        _engine.JobPaused += OnJobPaused;
+        _engine.JobResumed += OnJobResumed;
     }
 
     private void DetachEngineEvents()
     {
         _engine.ProgressChanged -= OnProgress;
-        _engine.JobStarted   -= OnJobStarted;
+        _engine.JobStarted -= OnJobStarted;
         _engine.JobCompleted -= OnJobCompleted;
-        _engine.JobStopped   -= OnJobStopped;
-        _engine.JobPaused    -= OnJobPaused;
-        _engine.JobResumed   -= OnJobResumed;
+        _engine.JobStopped -= OnJobStopped;
+        _engine.JobPaused -= OnJobPaused;
+        _engine.JobResumed -= OnJobResumed;
     }
 
     private void OnProgress(object? s, BackupProgressEventArgs e)

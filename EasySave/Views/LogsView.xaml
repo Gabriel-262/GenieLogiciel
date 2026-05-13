@@ -11,18 +11,18 @@
 
         <!-- Title -->
         <StackPanel Grid.Row="0" Margin="0,0,0,4">
-            <TextBlock Text="Journaux" Style="{StaticResource H1}"/>
+            <TextBlock Text="{DynamicResource UI_Sidebar_Logs}" Style="{StaticResource H1}"/>
             <TextBlock Style="{StaticResource Subtitle}">
-                <Run Text="Dossier : "/>
+                <Run Text="{DynamicResource UI_Logs_Folder}"/>
                 <Run Text="{Binding LogDirectory, Mode=OneWay}"/>
             </TextBlock>
         </StackPanel>
 
         <!-- Toolbar -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,16,0,12">
-            <Button Content="↻  Rafraîchir"
+            <Button Content="{DynamicResource UI_Btn_Refresh}"
                     Command="{Binding RefreshCommand}"/>
-            <Button Content="Ouvrir le dossier"
+            <Button Content="{DynamicResource UI_Logs_OpenFolder}"
                     Command="{Binding OpenLogFolderCommand}"/>
         </StackPanel>
 
@@ -40,7 +40,7 @@
                             BorderBrush="{DynamicResource BorderBrush}"
                             BorderThickness="0,0,0,1"
                             Padding="14,10">
-                        <TextBlock Text="FICHIERS" Style="{StaticResource Label}"/>
+                        <TextBlock Text="{DynamicResource UI_Logs_Files}" Style="{StaticResource Label}"/>
                     </Border>
                     <ListBox ItemsSource="{Binding Files}"
                              SelectedItem="{Binding SelectedFile, Mode=TwoWay}"
@@ -105,16 +105,16 @@
                           IsReadOnly="True"
                           SelectionMode="Single">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="Date" Binding="{Binding Timestamp, StringFormat=g}" Width="140"/>
-                        <DataGridTextColumn Header="Job"  Binding="{Binding JobId}"      Width="50"/>
-                        <DataGridTextColumn Header="Nom"  Binding="{Binding BackupName}" Width="140"/>
-                        <DataGridTextColumn Header="Action" Binding="{Binding Action}" Width="120"/>
-                        <DataGridTextColumn Header="Source"      Binding="{Binding SourceFilePath}"      Width="2*"/>
-                        <DataGridTextColumn Header="Destination" Binding="{Binding DestinationFilePath}" Width="2*"/>
-                        <DataGridTextColumn Header="Taille (o)"  Binding="{Binding FileSizeBytes}"       Width="90"/>
-                        <DataGridTextColumn Header="Transfert (ms)" Binding="{Binding TransferTimeMs}"   Width="100"/>
-                        <DataGridTextColumn Header="Crypto (ms)" Binding="{Binding CryptoTimeMs}"        Width="90"/>
-                        <DataGridTextColumn Header="Thread" Binding="{Binding ThreadId}" Width="60"/>
+                        <DataGridTextColumn Header="{DynamicResource UI_Logs_Col_Date}"        Binding="{Binding Timestamp, StringFormat=g}" Width="140"/>
+                        <DataGridTextColumn Header="{DynamicResource UI_Logs_Col_Job}"         Binding="{Binding JobId}"      Width="50"/>
+                        <DataGridTextColumn Header="{DynamicResource UI_Logs_Col_BackupName}"  Binding="{Binding BackupName}" Width="140"/>
+                        <DataGridTextColumn Header="{DynamicResource UI_Logs_Col_Action}"      Binding="{Binding Action}"     Width="120"/>
+                        <DataGridTextColumn Header="{DynamicResource UI_Col_Source}"           Binding="{Binding SourceFilePath}"      Width="2*"/>
+                        <DataGridTextColumn Header="{DynamicResource UI_Logs_Col_Destination}" Binding="{Binding DestinationFilePath}" Width="2*"/>
+                        <DataGridTextColumn Header="{DynamicResource UI_Logs_Col_Size}"        Binding="{Binding FileSizeBytes}"       Width="90"/>
+                        <DataGridTextColumn Header="{DynamicResource UI_Logs_Col_Transfer}"    Binding="{Binding TransferTimeMs}"      Width="100"/>
+                        <DataGridTextColumn Header="{DynamicResource UI_Logs_Col_Crypto}"      Binding="{Binding CryptoTimeMs}"        Width="90"/>
+                        <DataGridTextColumn Header="{DynamicResource UI_Logs_Col_Thread}"      Binding="{Binding ThreadId}" Width="60"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </Border>

@@ -16,7 +16,7 @@
         <!-- Title -->
         <StackPanel Grid.Row="0" Margin="0,0,0,4">
             <TextBlock Text="{DynamicResource UI_JobList_Title}" Style="{StaticResource H1}"/>
-            <TextBlock Text="Gérez et lancez vos travaux de sauvegarde." Style="{StaticResource Subtitle}"/>
+            <TextBlock Text="{DynamicResource UI_JobList_Subtitle}" Style="{StaticResource Subtitle}"/>
         </StackPanel>
 
         <!-- Top action bar -->
@@ -28,10 +28,10 @@
             </Grid.ColumnDefinitions>
 
             <StackPanel Grid.Column="0" Orientation="Horizontal">
-                <Button Content="+ Nouveau travail"
+                <Button Content="{DynamicResource UI_Btn_NewJob}"
                         Style="{StaticResource PrimaryButton}"
                         Click="Add_Click"/>
-                <Button Content="Tout exécuter"
+                <Button Content="{DynamicResource UI_Btn_ExecuteAll}"
                         Click="ExecuteAll_Click"
                         IsEnabled="{Binding JobList.HasJobs}"/>
             </StackPanel>
@@ -43,19 +43,19 @@
                         Visibility="{Binding JobList.HasAnyChecked, Converter={StaticResource BoolToVis}}">
                     <TextBlock Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold">
                         <Run Text="{Binding JobList.SelectedCount, Mode=OneWay}"/>
-                        <Run Text=" sélectionnés"/>
+                        <Run Text="{DynamicResource UI_Selection_Suffix}"/>
                     </TextBlock>
                 </Border>
-                <Button Content="Lancer la sélection"
+                <Button Content="{DynamicResource UI_Btn_ExecuteSelection}"
                         Style="{StaticResource PrimaryButton}"
                         Click="ExecuteSelection_Click"
                         IsEnabled="{Binding JobList.HasAnyChecked}"/>
-                <Button Content="Tout cocher" Click="SelectAll_Click"
+                <Button Content="{DynamicResource UI_Btn_SelectAll}" Click="SelectAll_Click"
                         IsEnabled="{Binding JobList.HasJobs}"/>
-                <Button Content="Aucun" Click="DeselectAll_Click"
+                <Button Content="{DynamicResource UI_Btn_SelectNone}" Click="DeselectAll_Click"
                         IsEnabled="{Binding JobList.HasAnyChecked}"/>
                 <Button Style="{StaticResource IconButton}"
-                        Content="↻" ToolTip="Rafraîchir" Click="Refresh_Click"/>
+                        Content="↻" ToolTip="{DynamicResource UI_Tooltip_Refresh}" Click="Refresh_Click"/>
             </StackPanel>
         </Grid>
 
@@ -78,10 +78,10 @@
                 Margin="0,16,0,0"
                 Visibility="{Binding JobList.IsEmpty, Converter={StaticResource BoolToVis}}">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,40">
-                <TextBlock Text="Aucun travail configuré"
+                <TextBlock Text="{DynamicResource UI_JobList_Empty_Title}"
                            Style="{StaticResource H2}"
                            HorizontalAlignment="Center"/>
-                <TextBlock Text="Cliquez sur « + Nouveau travail » pour en créer un."
+                <TextBlock Text="{DynamicResource UI_JobList_Empty_Help}"
                            Style="{StaticResource Muted}"
                            HorizontalAlignment="Center"
                            Margin="0,6,0,0"/>
@@ -149,7 +149,7 @@
                                                 <ColumnDefinition Width="60"/>
                                                 <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="Source"
+                                            <TextBlock Grid.Column="0" Text="{DynamicResource UI_Col_Source}"
                                                        Style="{StaticResource Label}"
                                                        VerticalAlignment="Center"/>
                                             <TextBlock Grid.Column="1" Text="{Binding SourcePath}"
@@ -161,7 +161,7 @@
                                                 <ColumnDefinition Width="60"/>
                                                 <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="Cible"
+                                            <TextBlock Grid.Column="0" Text="{DynamicResource UI_Col_Target}"
                                                        Style="{StaticResource Label}"
                                                        VerticalAlignment="Center"/>
                                             <TextBlock Grid.Column="1" Text="{Binding TargetPath}"
@@ -183,16 +183,16 @@
                                             </Style>
                                         </StackPanel.Style>
                                         <Button Style="{StaticResource PrimaryButton}"
-                                                Content="▶ Exécuter"
+                                                Content="{DynamicResource UI_Run_Execute}"
                                                 Tag="{Binding Id}"
                                                 Click="ExecuteOne_Click"/>
                                         <Button Style="{StaticResource IconButton}"
                                                 Content="✎"
-                                                ToolTip="Modifier"
+                                                ToolTip="{DynamicResource UI_Tooltip_Edit}"
                                                 Tag="{Binding Id}"
                                                 Click="EditOne_Click"/>
                                         <Button Style="{StaticResource DangerButton}"
-                                                ToolTip="Supprimer"
+                                                ToolTip="{DynamicResource UI_Tooltip_Delete}"
                                                 MinWidth="38"
                                                 Tag="{Binding Id}"
                                                 Click="DeleteOne_Click">
@@ -217,7 +217,7 @@
                                         </StackPanel.Style>
 
                                         <!-- Pause (visible when running) -->
-                                        <Button ToolTip="Pause"
+                                        <Button ToolTip="{DynamicResource UI_Tooltip_Pause}"
                                                 Command="{Binding Progress.PauseCommand}">
                                             <Button.Style>
                                                 <Style TargetType="Button" BasedOn="{StaticResource IconButton}">
@@ -235,7 +235,7 @@
                                         </Button>
 
                                         <!-- Resume (visible when paused) -->
-                                        <Button ToolTip="Reprendre"
+                                        <Button ToolTip="{DynamicResource UI_Tooltip_Resume}"
                                                 Command="{Binding Progress.ResumeCommand}">
                                             <Button.Style>
                                                 <Style TargetType="Button" BasedOn="{StaticResource IconButton}">
@@ -254,7 +254,7 @@
 
                                         <!-- Stop -->
                                         <Button Style="{StaticResource DangerButton}"
-                                                ToolTip="Arrêter"
+                                                ToolTip="{DynamicResource UI_Tooltip_Stop}"
                                                 MinWidth="38"
                                                 Command="{Binding Progress.StopCommand}">
                                             <TextBlock Text="&#xE71A;"
@@ -276,7 +276,7 @@
                                                 Margin="0,0,0,10"
                                                 Visibility="{Binding Progress.IsPausedForError, Converter={StaticResource BoolToVis}}">
                                             <StackPanel>
-                                                <TextBlock Text="En pause"
+                                                <TextBlock Text="{DynamicResource UI_Exec_Paused}"
                                                            Foreground="#FF1F2937"
                                                            FontWeight="Bold"/>
                                                 <TextBlock Text="{Binding Progress.ErrorMessage}"
@@ -295,7 +295,8 @@
                                                 <Run Text="{Binding Progress.ProcessedFiles}"/>
                                                 <Run Text=" / "/>
                                                 <Run Text="{Binding Progress.TotalFiles}"/>
-                                                <Run Text=" fichiers"/>
+                                                <Run Text=" "/>
+                                                <Run Text="{DynamicResource UI_Exec_FilesShort}"/>
                                             </TextBlock>
                                             <TextBlock Grid.Column="1"
                                                        Foreground="{DynamicResource AccentBrush}"
