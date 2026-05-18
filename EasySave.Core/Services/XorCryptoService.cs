@@ -82,7 +82,25 @@ public class XorCryptoService : ICryptoSoft
         string sideBySide = Path.Combine(baseDir, exeName);
         if (File.Exists(sideBySide)) return sideBySide;
 
-        return Path.GetFullPath(Path.Combine(
-            baseDir, "..", "..", "..", "..", "CryptoSoft", "bin", "Debug", "net8.0", exeName));
+        string rid = OperatingSystem.IsWindows() ? "win-x64"
+                   : OperatingSystem.IsLinux()   ? "linux-x64"
+                   : OperatingSystem.IsMacOS()   ? "osx-x64"
+                   : "";
+
+        string[] candidates =
+        {
+            Path.Combine(baseDir, "..", "..", "..", "..", "CryptoSoft", "bin", "Debug", "net8.0", exeName),
+            Path.Combine(baseDir, "..", "..", "..", "..", "CryptoSoft", "bin", "Debug", "net8.0", rid, exeName),
+            Path.Combine(baseDir, "..", "..", "..", "..", "CryptoSoft", "bin", "Release", "net8.0", exeName),
+            Path.Combine(baseDir, "..", "..", "..", "..", "CryptoSoft", "bin", "Release", "net8.0", rid, exeName),
+        };
+
+        foreach (var candidate in candidates)
+        {
+            string full = Path.GetFullPath(candidate);
+            if (File.Exists(full)) return full;
+        }
+
+        return Path.GetFullPath(candidates[0]);
     }
 }
