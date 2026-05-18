@@ -268,7 +268,7 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}"
-                                   Text="Ajouter" VerticalAlignment="Center" Margin="0"/>
+                                   Text="{DynamicResource UI_Btn_Add}" VerticalAlignment="Center" Margin="0"/>
                         <TextBox x:Name="NewExtensionBox" Grid.Column="1" VerticalAlignment="Center"/>
                         <Button Grid.Column="2"
                                 Content="{DynamicResource UI_Btn_Add}"
@@ -322,7 +322,7 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}"
-                                   Text="Ajouter" VerticalAlignment="Center" Margin="0"/>
+                                   Text="{DynamicResource UI_Btn_Add}" VerticalAlignment="Center" Margin="0"/>
                         <TextBox x:Name="NewPriorityExtensionBox" Grid.Column="1" VerticalAlignment="Center"/>
                         <Button Grid.Column="2"
                                 Content="{DynamicResource UI_Btn_Add}"

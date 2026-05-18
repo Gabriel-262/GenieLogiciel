@@ -1,6 +1,6 @@
 {
   "AutoAssignJobId": false,
-  "Language": "fr",
+  "Language": "en",
   "BackKey": "r",
   "LogFormat": "json",
   "MaxJobs": 15,
